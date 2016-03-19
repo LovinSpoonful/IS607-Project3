@@ -73,7 +73,9 @@ sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = 
 </code></pre>
 <pre class="r"><code># Establish connection to the database
 library(RODBC)
-cnString &lt;- &quot;MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;&quot;
+#cnString &lt;- &quot;MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;&quot;
+cnString &lt;- &quot;MySQL_ANSI;SERVER=65.99.237.189;DATABASE=stealthi_cuny;UID=stealthi_cuny;PASSWORD=cuny123;&quot;  # 65.99.237.189
+#cnString &lt;- &quot;MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;&quot;
 db &lt;- odbcConnect(cnString, case=&quot;nochange&quot;)
 
 #manually input the list of csv files on github
@@ -128,7 +130,8 @@ sqlSave(db, df1, tablename = &quot;tbl_skill_type&quot;, rownames=FALSE, append=
 sqlQuery(db,&quot;DELETE FROM tbl_skill;&quot;) # first truncate the imported records table</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
 <pre class="r"><code>sqlQuery(db,&quot;INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;&quot;)</code></pre>
-<pre><code>## character(0)</code></pre>
+<pre><code>## [1] &quot;42S02 1146 [MySQL][ODBC 5.3(a) Driver][mysqld-5.5.48-MariaDB]Table 'stealthi_cuny.tbl_Skill' doesn't exist&quot;                                                                                                                                                                  
+## [2] &quot;[RODBC] ERROR: Could not SQLExecDirect 'INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;'&quot;</code></pre>
 <p>Populate the normalized table of values</p>
 <pre class="r"><code>sqlQuery(db,&quot;DELETE FROM tbl_data_n;&quot;) # first truncate it</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
@@ -139,7 +142,7 @@ sSQL &lt;- paste(&quot;INSERT INTO tbl_data_n (skill_type_id, skill_id, source_i
               &quot;JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      &quot;,
               &quot;JOIN tbl_import i ON i.skill_name = s.skill_name;                 &quot;, sep = &quot;&quot;)
 sqlQuery(db,sSQL)</code></pre>
-<pre><code>## character(0)</code></pre>
+<pre><code>## [1] &quot;No Data&quot;</code></pre>
 <p>To make it easier to create analysis views, create a master view with all the descriptors</p>
 <pre class="r"><code>sqlQuery(db,&quot;DROP VIEW IF EXISTS `vw_data`;&quot;)</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>

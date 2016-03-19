@@ -67,6 +67,24 @@ ON DELETE NO ACTION
 ON UPDATE CASCADE;
 
 
+-- denormalized representation of data
+-- to ease view generation
+DROP TABLE IF EXISTS `tbl_data`;
+CREATE TABLE `tbl_data` (
+`skill_type_id`       int(11)   NULL,
+`skill_id`            int(11)   NULL,
+`source_id`           int(11)   NULL,
+`skill_type_name`     char(100) NULL,
+`skill_name`          char(100) NULL,
+`source_name`         char(100) NULL,
+`source_description`  char(100) NULL,
+`rating`              float     NULL,
+`z_score_global`      float     NULL,
+`rel_rank_global`     float     NULL,
+`scalar_global`       float     NULL,
+`z_score_local`       float     NULL,
+`rel_rank_local`      float     NULL,
+`scalar_local`        float     NULL)
 
 
 
