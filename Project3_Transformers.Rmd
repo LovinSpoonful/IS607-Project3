@@ -7,11 +7,8 @@ output: html_document
 
 
 ```
-
+#save in case we need this
 sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = FALSE, nastring = NULL, fast = TRUE)
-
-df <- sqlQuery(db,"SELECT * FROM tbl_import", stringsAsFactors = FALSE)  
-print(df)
 
 ```
 
@@ -27,8 +24,8 @@ db <- odbcConnect(cnString, case="nochange")
 #manually input the list of csv files on github
 sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv",
              "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv",
-             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv")
-
+             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv",
+             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv")
 ```
 
 
@@ -38,12 +35,12 @@ sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c
 
 # Import all the source data into the database
 
-sqlClear(db, "tbl_source", errors = TRUE) # truncate the data sources table
+sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records table
 
 # Loop through every source data file
 for (i in 1:length(sources)){
 
-  #create a record of the source in the database
+  #record the source of the data in the sources table
   dat <- read.csv(file = sources[i], header=FALSE, sep=",") 
   source_id <- i
   source_name <- as.character(dat[1,1])  # get the source name from the top row of the data file
@@ -51,7 +48,7 @@ for (i in 1:length(sources)){
   sSQL <- paste("INSERT INTO tbl_source VALUES (", source_id, ", '", gsub(" ", "_", source_name), "', '", source_name, "', '", source_url, "')",   sep = "", collapse = NULL)  # write this information into the sources table
   sqlQuery(db,sSQL)
 
-  #set the column names and remove the header lines
+  #set the column names of the dataset and remove the header lines
   n <- unlist(dat[3,])
   names(dat) = n  #
   dat <- dat[-1:-3,]
@@ -62,7 +59,46 @@ for (i in 1:length(sources)){
   sqlSave(db, dat, tablename = "tbl_import", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 
 }
+```
+
+Deduplicate the data and setup the Skills Types, Skills Names tables
+
+```{r}
+
+# retrieve the imported records into a data frame
+df <- sqlQuery(db,"SELECT source_id, skill_type_name, skill_name, ROUND(AVG(rating),3) rating FROM tbl_import GROUP BY source_id, skill_type_name, skill_name ORDER BY source_id, skill_type_name, skill_name;", stringsAsFactors = FALSE)  
+
+# write the de-duplicated import records back into the database
+sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records table
+sqlSave(db, df, tablename = "tbl_import", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
+
+# create a master list of skill types (using r)
+sqlQuery(db,"DELETE FROM tbl_skill_type") # first truncate the imported records table
+skill_type_name <- unique(df$skill_type_name,incomparables = FALSE, stringsAsFactors = FALSE)
+skill_type_id <- c(1:length(skill_type_name))
+skill_type_description <- skill_type_name # enrich later if can get descriptions
+df1 <- data.frame(skill_type_id,skill_type_name, skill_type_description) # create a dataframe that matches the table structure
+sqlSave(db, df1, tablename = "tbl_skill_type", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
+
+# create a master list of skill names (using my sql)
+sqlQuery(db,"DELETE FROM tbl_skill") # first truncate the imported records table
+sqlQuery(db,"INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name")
+
+
+
 
 ```
+
+
+next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
+
+
+create a union table and push out each variant
+
+
+we need to host a mysql database somewhere!
+
+```
+
 
 

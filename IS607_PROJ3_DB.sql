@@ -16,7 +16,7 @@ CREATE TABLE `tbl_import` (
 -- distinct skills from tbl_import
 DROP TABLE IF EXISTS `tbl_skill`;
 CREATE TABLE `tbl_skill` (
-`skill_id`           int(11) NOT NULL,
+`skill_id`           int(11) NOT NULL auto_increment,
 `skill_type_id`      int(11) NOT NULL,
 `skill_name`         char(100) NOT NULL,
 `skill_description`  char(255) NULL,
