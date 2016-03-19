@@ -57,8 +57,8 @@ for (i in 1:length(sources)){
   source_id <- rep(i,nrow(dat)) # create a column to show which data set these samples came from
   dat <- data.frame(source_id,dat) # add that column to the front of the dataframe
   sqlSave(db, dat, tablename = "tbl_import", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
-
 }
+
 ```
 
 Deduplicate the data and setup the Skills Types, Skills Names tables
@@ -81,24 +81,55 @@ df1 <- data.frame(skill_type_id,skill_type_name, skill_type_description) # creat
 sqlSave(db, df1, tablename = "tbl_skill_type", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 
 # create a master list of skill names (using my sql)
-sqlQuery(db,"DELETE FROM tbl_skill") # first truncate the imported records table
-sqlQuery(db,"INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name")
-
-
-
+sqlQuery(db,"DELETE FROM tbl_skill;") # first truncate the imported records table
+sqlQuery(db,"INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;")
 
 ```
 
 
-next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
+Populate the normalized table of values
+
+```{r}
+
+sqlQuery(db,"DELETE FROM tbl_data_n;") # first truncate it
+# populate it
+sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) ",
+              "SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         ",
+              "FROM tbl_skill s                                                  ",
+              "JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      ",
+              "JOIN tbl_import i ON i.skill_name = s.skill_name;                 ", sep = "")
+sqlQuery(db,sSQL)
+
+```
+
+To make it easier to create analysis views, create a master view with all the descriptors
+
+```{r}
+
+sqlQuery(db,"DROP VIEW IF EXISTS `vw_data`;")
+sSQL <- paste("CREATE VIEW `vw_data` AS ",
+              "SELECT s.skill_type_id, s.skill_id, i.source_id, st.skill_type_name, s.skill_name, so.source_name, so.source_description, i.rating ",
+              "FROM tbl_skill s ",
+              "JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id ",
+              "JOIN tbl_import i ON i.skill_name = s.skill_name ",
+              "JOIN tbl_source so ON so.source_id = i.source_id;")
+sqlQuery(db,sSQL)  
+
+```
 
 
-create a union table and push out each variant
+
 
 
 we need to host a mysql database somewhere!
 
-```
+next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
 
+
+
+```
+so the presenter will get a set of views, which they can get with a single line of code
+like this "df <- sqlQuery(db,"SELECT * FROM vw_Top10_Skills_All")"
+```
 
 
