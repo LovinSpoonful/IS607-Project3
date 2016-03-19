@@ -93,7 +93,7 @@ Populate the normalized table of values
 ```{r}
 
 sqlQuery(db,"DELETE FROM tbl_data_n;") # first truncate it
-# populate it
+# populate the data table
 sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) ",
               "SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         ",
               "FROM tbl_skill s                                                  ",

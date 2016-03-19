@@ -1,5 +1,5 @@
 
--- Create database evaluating relative desirability of data science skills
+-- Create a database to help evaluate relative desirability of data science skills
 DROP SCHEMA IF EXISTS skill;
 CREATE SCHEMA skill;
 USE skill;
