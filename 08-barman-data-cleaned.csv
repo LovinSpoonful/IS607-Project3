@@ -1,6 +1,6 @@
 Kaggle Data Science Jobs Board,,
 https://www.kaggle.com/jobs,,
-skilltype,skill,rating
+skill_type_name,skill_name,rating
 programming,Python,28
 math,analytics,23
 programming,machine learning,19

@@ -1,6 +1,6 @@
 Indeed.com Jobs,,
 http://www.indeed.com/jobs,,
-skilltype,skill,rating
+skill_type_name,skill_name,rating
 programming,agent-based Simulation,32
 programming,ANOVA,138
 math,Bayes networks,74
