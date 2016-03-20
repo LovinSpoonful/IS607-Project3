@@ -1,0 +1,83 @@
+Indeed.com Jobs,,
+http://www.indeed.com/jobs,,
+skilltype,skill,rating
+programming,agent-based Simulation,32
+programming,ANOVA,138
+math,Bayes networks,74
+math,Bayesian Statistics,175
+programming,big data,44
+programming,BUGS,160
+programming,C,80
+math,calculus,91
+programming,cloud tech,106
+programming,clustering,165
+math,continuous Simulation,149
+math,convex Optimization,17
+programming,CSS,93
+programming,DBA,143
+business,decision trees,117
+visualization,design,15
+programming,discrete Simulation,94
+programming,Distributed Data,94
+visualization,experimental design,152
+business,forecasting,49
+math,general linear model,133
+math,geographic covariates,0
+programming,GIS,233
+business,global Optimization,94
+visualization,Graphical Models,122
+programming,Hadoop,76
+programming,Hive,106
+programming,HTML,73
+math,integer Optimization,96
+programming,JAVA,70
+programming,JavaScript,83
+programming,JSON,146
+math,linear algebra,69
+programming,Machine Learning,98
+visualization,Map/Reduce,109
+visualization,mapping,134
+math,Math,76
+programming,MATLAB,108
+math,MCMC,68
+math,Monte-Carlo Statistics,170
+math,multinomial modeling,16
+programming,MySQL,114
+programming,neural nets,64
+programming,nix,6
+programming,NoSQL,89
+programming,Objective C,129
+programming,Oracle,121
+programming,Perl,96
+programming,Pig,155
+programming,PostgreSQL,124
+business,Product Development,41
+business,project management,25
+programming,Python,52
+programming,R,64
+programming,Rails,132
+business,real analysis,70
+programming,RegEx,86
+programming,Ruby,102
+programming,SAS ,52
+programming,Simulation,136
+communication,social networks,172
+math,Spatial Statistics,109
+programming,SPSS,122
+programming,SQL,44
+programming,Stata,107
+visualization,statistical graphics,183
+math,Statistics,85
+programming,Structured Data,75
+business,Surveys and Marketing,130
+programming,SVM,144
+business,Systems Administration,109
+communication,technical writing/publishing,4
+programming,Teradata,127
+programming,text mining,174
+math,time-series analysis,167
+programming,UNIX ,89
+programming,Unstructured Data,92
+visualization,visualization,80
+visualization,web-based data-viz,0
+programming,XML,185
