@@ -48,6 +48,7 @@ CREATE TABLE `tbl_source` (
 `source_URL`          char(255) NULL,
 PRIMARY KEY (`source_id`));
 
+-- removed foreighn keys so r code could repeat
 /*
 ALTER TABLE tbl_skill
 ADD FOREIGN KEY fk_skill_type(skill_type_id)
