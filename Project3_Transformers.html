@@ -71,6 +71,11 @@ img {
 <pre><code>#save in case we need this
 sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = FALSE, nastring = NULL, fast = TRUE)
 </code></pre>
+<p>if we don’t have an ODBC driver, can connect to the db using rMySQL</p>
+<pre><code>library(RMySQL)
+db &lt;- dbConnect(MySQL(), user='project3', password='CUNYRBridge4', dbname='skill', host='85.10.205.173')
+dbListTables(db)
+dbDisconnect(db)</code></pre>
 <pre class="r"><code># Establish connection to the database
 library(RODBC)
 #cnString &lt;- &quot;MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;&quot;
@@ -78,13 +83,23 @@ cnString &lt;- &quot;MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;P
 db &lt;- odbcConnect(cnString, case=&quot;nochange&quot;)
 
 #manually input the list of csv files on github
-sources &lt;- c(&quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv&quot;,
-             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv&quot;,
-             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv&quot;,
-             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv&quot;)</code></pre>
+
+#test data
+#sources &lt;- c(&quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv&quot;,
+#             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv&quot;,
+#             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv&quot;,
+#             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv&quot;)
+
+#real data
+sources &lt;- c(&quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/08-barman-data-cleaned.csv&quot;,
+             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/09-briot-data-cleaned.csv&quot;,
+             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/10-karr-data-cleaned.csv&quot;,
+             &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/11-fanelli-data-cleaned.csv&quot;)</code></pre>
 <pre class="r"><code># Import all the source data into the database
 
 sqlQuery(db,&quot;DELETE FROM tbl_import;&quot;) # first truncate the imported records table</code></pre>
+<pre><code>## character(0)</code></pre>
+<pre class="r"><code>sqlQuery(db,&quot;DELETE FROM tbl_source;&quot;) # also empty the sources table</code></pre>
 <pre><code>## character(0)</code></pre>
 <pre class="r"><code># Loop through every source data file
 for (i in 1:length(sources)){
@@ -97,14 +112,11 @@ for (i in 1:length(sources)){
   sSQL &lt;- paste(&quot;INSERT INTO tbl_source VALUES (&quot;, source_id, &quot;, '&quot;, gsub(&quot; &quot;, &quot;_&quot;, source_name), &quot;', '&quot;, source_name, &quot;', '&quot;, source_url, &quot;')&quot;,   sep = &quot;&quot;, collapse = NULL)  # write this information into the sources table
   sqlQuery(db,sSQL)
 
-  #set the column names of the dataset and remove the header lines
-  n &lt;- unlist(dat[3,])
-  names(dat) = n  #
-  dat &lt;- dat[-1:-3,]
-
   #export all the data for this source into the database (the Import table)
+  dat &lt;- dat[-1:-3,] #remove the header lines
   source_id &lt;- rep(i,nrow(dat)) # create a column to show which data set these samples came from
   dat &lt;- data.frame(source_id,dat) # add that column to the front of the dataframe
+  names(dat) &lt;- c(&quot;source_id&quot;,&quot;skill_type_name&quot;,&quot;skill_name&quot;,&quot;rating&quot;)  #hardcode the column names.  should get them from the table definition!
   sqlSave(db, dat, tablename = &quot;tbl_import&quot;, rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 }</code></pre>
 <p>Deduplicate the data and setup the Skills Types, Skills Names tables</p>
@@ -134,7 +146,7 @@ sqlQuery(db,&quot;DELETE FROM tbl_skill;&quot;) # first truncate the imported re
 <p>Populate the normalized table of values</p>
 <pre class="r"><code>sqlQuery(db,&quot;DELETE FROM tbl_data_n;&quot;) # first truncate it</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
-<pre class="r"><code># populate it
+<pre class="r"><code># populate the data table
 sSQL &lt;- paste(&quot;INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) &quot;,
               &quot;SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         &quot;,
               &quot;FROM tbl_skill s                                                  &quot;,
@@ -153,7 +165,6 @@ sqlQuery(db,sSQL)</code></pre>
               &quot;JOIN tbl_source so ON so.source_id = i.source_id;&quot;)
 sqlQuery(db,sSQL)  </code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
-<p>we need to host a mysql database somewhere!</p>
 <p>next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.</p>
 <pre><code>so the presenter will get a set of views, which they can get with a single line of code
 like this &quot;df &lt;- sqlQuery(db,&quot;SELECT * FROM vw_Top10_Skills_All&quot;)&quot;</code></pre>

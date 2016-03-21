@@ -68,7 +68,7 @@ ON UPDATE CASCADE;
 
 
 -- denormalized representation of data
--- to ease view generation
+-- to make view generation easier
 DROP TABLE IF EXISTS `tbl_data`;
 CREATE TABLE `tbl_data` (
 `skill_type_id`       int(11)   NULL,

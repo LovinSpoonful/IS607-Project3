@@ -12,6 +12,13 @@ sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = 
 
 ```
 
+if we don't have an ODBC driver, can connect to the db using rMySQL
+```
+library(RMySQL)
+db <- dbConnect(MySQL(), user='project3', password='CUNYRBridge4', dbname='skill', host='85.10.205.173')
+dbListTables(db)
+dbDisconnect(db)
+```
 
 
 ```{r}
@@ -23,12 +30,20 @@ cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
-sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv",
-             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv",
-             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv",
-             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv")
-```
 
+#test data
+#sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv",
+#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv",
+#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv",
+#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv")
+
+#real data
+sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/08-barman-data-cleaned.csv",
+             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/09-briot-data-cleaned.csv",
+             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/10-karr-data-cleaned.csv",
+             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/11-fanelli-data-cleaned.csv")
+       
+```
 
 
 
@@ -37,6 +52,7 @@ sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c
 # Import all the source data into the database
 
 sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records table
+sqlQuery(db,"DELETE FROM tbl_source;") # also empty the sources table
 
 # Loop through every source data file
 for (i in 1:length(sources)){
@@ -49,14 +65,11 @@ for (i in 1:length(sources)){
   sSQL <- paste("INSERT INTO tbl_source VALUES (", source_id, ", '", gsub(" ", "_", source_name), "', '", source_name, "', '", source_url, "')",   sep = "", collapse = NULL)  # write this information into the sources table
   sqlQuery(db,sSQL)
 
-  #set the column names of the dataset and remove the header lines
-  n <- unlist(dat[3,])
-  names(dat) = n  #
-  dat <- dat[-1:-3,]
-
   #export all the data for this source into the database (the Import table)
+  dat <- dat[-1:-3,] #remove the header lines
   source_id <- rep(i,nrow(dat)) # create a column to show which data set these samples came from
   dat <- data.frame(source_id,dat) # add that column to the front of the dataframe
+  names(dat) <- c("source_id","skill_type_name","skill_name","rating")  #hardcode the column names.  should get them from the table definition!
   sqlSave(db, dat, tablename = "tbl_import", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 }
 
@@ -117,12 +130,6 @@ sSQL <- paste("CREATE VIEW `vw_data` AS ",
 sqlQuery(db,sSQL)  
 
 ```
-
-
-
-
-
-we need to host a mysql database somewhere!
 
 next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
 
