@@ -21,12 +21,12 @@ dbDisconnect(db)
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 
 # Establish connection to the database
 library(RODBC)
-#cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
-cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
+cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
+#cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
@@ -47,7 +47,7 @@ sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/mas
 
 
 
-```{r}
+```{r, echo=FALSE}
 
 # Import all the source data into the database
 
@@ -77,7 +77,7 @@ for (i in 1:length(sources)){
 
 Deduplicate the data and setup the Skills Types, Skills Names tables
 
-```{r}
+```{r, echo=FALSE}
 
 # retrieve the imported records into a data frame
 df <- sqlQuery(db,"SELECT source_id, skill_type_name, skill_name, ROUND(AVG(rating),3) rating FROM tbl_import GROUP BY source_id, skill_type_name, skill_name ORDER BY source_id, skill_type_name, skill_name;", stringsAsFactors = FALSE)  
@@ -87,7 +87,10 @@ sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records tab
 sqlSave(db, df, tablename = "tbl_import", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 
 # create a master list of skill types (using r)
-sqlQuery(db,"DELETE FROM tbl_skill_type") # first truncate the imported records table
+sqlQuery(db,"TRUNCATE TABLE tbl_data;") # first truncate it
+sqlQuery(db,"TRUNCATE TABLE tbl_data_n;") # first truncate it
+sqlQuery(db,"TRUNCATE TABLE tbl_skill;") # first truncate the imported records table
+sqlQuery(db,"TRUNCATE TABLE tbl_skill_type") # first truncate the table
 skill_type_name <- unique(df$skill_type_name,incomparables = FALSE, stringsAsFactors = FALSE)
 skill_type_id <- c(1:length(skill_type_name))
 skill_type_description <- skill_type_name # enrich later if can get descriptions
@@ -95,8 +98,7 @@ df1 <- data.frame(skill_type_id,skill_type_name, skill_type_description) # creat
 sqlSave(db, df1, tablename = "tbl_skill_type", rownames=FALSE, append=TRUE) # write the dataframe to the mySQL table
 
 # create a master list of skill names (using my sql)
-sqlQuery(db,"DELETE FROM tbl_skill;") # first truncate the imported records table
-sqlQuery(db,"INSERT INTO tbl_Skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;")
+sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;")
 
 ```
 
@@ -105,7 +107,7 @@ Populate the normalized table of values
 
 ```{r}
 
-sqlQuery(db,"DELETE FROM tbl_data_n;") # first truncate it
+
 # populate the data table
 sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) ",
               "SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         ",
@@ -118,7 +120,7 @@ sqlQuery(db,sSQL)
 
 To make it easier to create analysis views, create a master view with all the descriptors
 
-```{r}
+```{r, echo=FALSE}
 
 sqlQuery(db,"DROP VIEW IF EXISTS `vw_data`;")
 sSQL <- paste("CREATE VIEW `vw_data` AS ",
@@ -129,10 +131,25 @@ sSQL <- paste("CREATE VIEW `vw_data` AS ",
               "JOIN tbl_source so ON so.source_id = i.source_id;")
 sqlQuery(db,sSQL)  
 
+#Also make a denormalized table with the analysis fields in it
+sqlQuery(db,"DELETE FROM tbl_data;") # first truncate it
+sSQL = "INSERT INTO tbl_data (skill_type_id, skill_id, source_id, skill_type_name, skill_name, source_name, source_description, rating) SELECT skill_type_id, skill_id, source_id, skill_type_name, skill_name, source_name, source_description, rating FROM vw_data;"
+sqlQuery(db,sSQL)  
+
 ```
 
-next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
 
+Show how to query the data
+```{r}
+
+df <- sqlQuery(db,"SELECT * FROM tbl_data;")
+head(df)
+class(df)
+
+```
+
+
+Next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
 
 
 ```

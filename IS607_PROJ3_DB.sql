@@ -13,6 +13,15 @@ CREATE TABLE `tbl_import` (
 `skill_name`          char(100) NOT NULL,
 `rating`              float     NOT NULL);
 
+-- normalized representation of imported data
+DROP TABLE IF EXISTS `tbl_data_n`;
+CREATE TABLE `tbl_data_n` (
+`skill_type_id`       int(11) NOT NULL,
+`skill_id`            int(11) NOT NULL,
+`source_id`           int(11) NOT NULL,
+`rating`              float   NOT NULL,
+PRIMARY KEY (`skill_type_id`, `skill_id`, `source_id`));
+
 -- distinct skills from tbl_import
 DROP TABLE IF EXISTS `tbl_skill`;
 CREATE TABLE `tbl_skill` (
@@ -39,32 +48,25 @@ CREATE TABLE `tbl_source` (
 `source_URL`          char(255) NULL,
 PRIMARY KEY (`source_id`));
 
+/*
 ALTER TABLE tbl_skill
 ADD FOREIGN KEY fk_skill_type(skill_type_id)
 REFERENCES tbl_skill_type(skill_type_id)
 ON DELETE NO ACTION
-ON UPDATE CASCADE;
-
--- normalized representation of imported data
-DROP TABLE IF EXISTS `tbl_data_n`;
-CREATE TABLE `tbl_data_n` (
-`skill_type_id`       int(11) NOT NULL,
-`skill_id`            int(11) NOT NULL,
-`source_id`           int(11) NOT NULL,
-`rating`              float   NOT NULL,
-PRIMARY KEY (`skill_type_id`, `skill_id`, `source_id`));
+ON UPDATE NO ACTION;
 
 ALTER TABLE tbl_data_n
 ADD FOREIGN KEY fk_skill_type(skill_type_id)
 REFERENCES tbl_skill_type(skill_type_id)
 ON DELETE NO ACTION
-ON UPDATE CASCADE;
+ON UPDATE NO ACTION;
 
 ALTER TABLE tbl_data_n
 ADD FOREIGN KEY fk_skill(skill_id)
 REFERENCES tbl_skill(skill_id)
 ON DELETE NO ACTION
-ON UPDATE CASCADE;
+ON UPDATE NO ACTION;
+*/
 
 
 -- denormalized representation of data
@@ -85,8 +87,6 @@ CREATE TABLE `tbl_data` (
 `z_score_local`       float     NULL,
 `rel_rank_local`      float     NULL,
 `scalar_local`        float     NULL)
-
-
 
 
 
