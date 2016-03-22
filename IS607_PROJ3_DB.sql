@@ -17,6 +17,7 @@ CREATE TABLE `tbl_import` (
 DROP TABLE IF EXISTS `tbl_data_n`;
 CREATE TABLE `tbl_data_n` (
 `skill_type_id`       int(11) NOT NULL,
+`skill_set_id`        int(11)   NOT NULL,
 `skill_id`            int(11) NOT NULL,
 `source_id`           int(11) NOT NULL,
 `rating`              float   NOT NULL,
@@ -31,6 +32,7 @@ CREATE TABLE `tbl_skill` (
 `skill_description`  char(255) NULL,
 PRIMARY KEY (`skill_id`));
 
+
 -- distinct skill types from tbl_import
 DROP TABLE IF EXISTS `tbl_skill_type`;
 CREATE TABLE `tbl_skill_type` (
@@ -38,6 +40,39 @@ CREATE TABLE `tbl_skill_type` (
 `skill_type_name`         char(100) NOT NULL,
 `skill_type_description`  char(255) NULL,
 PRIMARY KEY (`skill_type_id`));
+
+
+
+
+CREATE TABLE `tbl_skill_set_xref` (
+  `skill_set_id` int(11) NOT NULL,
+  `skill_id` int(11) NOT NULL,
+  PRIMARY KEY (`skill_set_id`,`skill_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- static table
+DROP TABLE IF EXISTS `tbl_skill_set`;
+CREATE TABLE `tbl_skill_set` (
+`skill_set_id`           int(11)   NOT NULL auto_increment,
+`skill_set_name`         char(100) NOT NULL,
+`skill_set_description`  char(255) NULL,
+PRIMARY KEY (`skill_set_id`));
+
+
+-- static table
+DROP TABLE IF EXISTS `tbl_skill_category_sets`;
+CREATE TABLE `tbl_skill_category_sets` (
+`skill_set_name`         char(100) NOT NULL,
+`skill_set_description`  char(255) NULL,
+PRIMARY KEY (`skill_set_name`));
+
+
+DROP TABLE IF EXISTS `tbl_skills_categories`;
+CREATE TABLE `tbl_skills_categories` (
+`skill_set_name`       int(11)   NOT NULL,
+`skill_name`           int(11)   NOT NULL, 
+PRIMARY KEY (`skill_set_name`,`skill_name`));
+
 
 -- distinct sources from tbl_import
 DROP TABLE IF EXISTS `tbl_source`;
@@ -75,9 +110,11 @@ ON UPDATE NO ACTION;
 DROP TABLE IF EXISTS `tbl_data`;
 CREATE TABLE `tbl_data` (
 `skill_type_id`       int(11)   NULL,
+`skill_set_id`        int(11)   NOT NULL,
 `skill_id`            int(11)   NULL,
 `source_id`           int(11)   NULL,
 `skill_type_name`     char(100) NULL,
+`skill_set_name`      char(100) NOT NULL,
 `skill_name`          char(100) NULL,
 `source_name`         char(100) NULL,
 `source_description`  char(100) NULL,

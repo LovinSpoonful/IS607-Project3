@@ -1,33 +1,33 @@
-Skill Categories
-Structured Data
-Visualization
-Front-End Programming
-Unstructured Data
-Systems Administration
-Temporal Statistics
-Relational Databases
-Science
-Product Development
-Machine Learning
-Surveys and Marketing
-Classical Statistics
-Statistical Programming
-Spatial Statistics
-General Programming
-Graphical Models
-Simulation
-Information Security
-Back-End Programming
-Industry-Specific Knowledge
-Data Manipulation
-Math
-Object-Oriented Programming
-Communication
-Big and Distributed Data
-Bayesian/Monte-Carlo Statistics
-Mobile Devices
-Mathematical Programming
-Business
-Optimization
-Creative Thinking
-Algorithms
+Skill Categories,Skill Description,Skill Type
+Structured Data,,programming
+Visualization,,visualization
+Front-End Programming,,programming
+Unstructured Data,,programming
+Systems Administration,,programming
+Temporal Statistics,,math
+Relational Databases,,programming
+Science,,business
+Product Development,,business
+Machine Learning,,programming
+Surveys and Marketing,,math
+Classical Statistics,,math
+Statistical Programming,,programming
+Spatial Statistics,,math
+General Programming,,programming
+Graphical Models,,visualization
+Simulation,,math
+Information Security,,programming
+Back-End Programming,,programming
+Industry-Specific Knowledge,,business
+Data Manipulation,,programming
+Math,,math
+Object-Oriented Programming,,programming
+Communication,,communication
+Big and Distributed Data,,programming
+Bayesian/Monte-Carlo Statistics,,math
+Mobile Devices,,programming
+Mathematical Programming,,programming
+Business,,business
+Optimization,,math
+Creative Thinking,,business
+Algorithms,,math
