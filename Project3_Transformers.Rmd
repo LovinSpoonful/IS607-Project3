@@ -6,20 +6,6 @@ output: html_document
 ---
 
 
-```
-#save in case we need this
-sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = FALSE, nastring = NULL, fast = TRUE)
-
-```
-
-if we don't have an ODBC driver, can connect to the db using rMySQL
-```
-library(RMySQL)
-db <- dbConnect(MySQL(), user='project3', password='CUNYRBridge4', dbname='skill', host='85.10.205.173')
-dbListTables(db)
-dbDisconnect(db)
-```
-
 
 ```{r, echo=FALSE}
 
@@ -30,19 +16,10 @@ cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
-
-#test data
-#sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2010.csv",
-#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2013.csv",
-#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/39c575afb60c2ca7d309bb1bdc522b6135df85a2/skills2014.csv",
-#             "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/56e8b1c400691cba256d36c9ed33a2478121ff2f/skillsdis.csv")
-
-#real data
 sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/08-barman-data-cleaned.csv",
              "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/09-briot-data-cleaned.csv",
              "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/10-karr-data-cleaned.csv",
              "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/11-fanelli-data-cleaned.csv")
-       
 ```
 
 
@@ -52,17 +29,17 @@ sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/mas
 # Import all the source data into the database
 
 sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records table
-sqlQuery(db,"DELETE FROM tbl_source;") # also empty the sources table
+sqlQuery(db,"DELETE FROM tbl_source;") # also empty the source table
 
 # Loop through every source data file
 for (i in 1:length(sources)){
 
-  #record the source of the data in the sources table
+  #record the source of the data in the source table
   dat <- read.csv(file = sources[i], header=FALSE, sep=",") 
   source_id <- i
   source_name <- as.character(dat[1,1])  # get the source name from the top row of the data file
   source_url <- as.character(dat[2,1])   # get the source URL from 2nd row
-  sSQL <- paste("INSERT INTO tbl_source VALUES (", source_id, ", '", gsub(" ", "_", source_name), "', '", source_name, "', '", source_url, "')",   sep = "", collapse = NULL)  # write this information into the sources table
+  sSQL <- paste("INSERT INTO tbl_source VALUES (", source_id, ", '", gsub(" ", "_", source_name), "', '", source_name, "', '", source_url, "')",   sep = "", collapse = NULL)  # write this information into the source table
   sqlQuery(db,sSQL)
 
   #export all the data for this source into the database (the Import table)
@@ -75,7 +52,8 @@ for (i in 1:length(sources)){
 
 ```
 
-Deduplicate the data and setup the Skills Types, Skills Names tables
+
+De-duplicate the imported data and setup the Skill Types, Skill Names tables
 
 ```{r, echo=FALSE}
 
@@ -103,37 +81,161 @@ sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT 
 ```
 
 
+
+populate skill sets and the cross references to skills (Keith)
+
+```{r}
+
+##########################################################################################################
+#KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
+
+library(RMySQL)
+library(dplyr)
+
+# proj_user <- "root"
+# proj_pwd  <- "CUNYRBridge4!"
+# proj_db   <- "skill"
+# proj_host <- "localhost"
+
+
+proj_user <- "project3"
+proj_pwd  <- "CUNYRBridge4"
+proj_db   <- "skill"
+proj_host <- "db4free.net"
+
+
+
+
+##################################################################
+#KEITH F
+# Load tbl_skill_set from the CSV file on GitHub
+#
+##################################################################
+
+# establish the connection to the skill DB on db4free.ne
+skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
+
+# GitHub location 
+#URL <- "C:/Users/keith/Documents/DataScience/CUNY/DATA607/Projects/Project3/Skill_Categories.csv"
+
+URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Categories.csv"
+
+# read the skillsets file into a dataframe
+skill_set <- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
+
+# sync dataframe columns to match the target table
+
+skill_set$skill_set_id <- rownames(skill_set)
+
+colnames(skill_set) <- c("skill_set_name", "skill_set_description", "skill_type", "skill_set_id")
+
+# pull down skill types from MySQL
+skill_types <-  dbGetQuery(skilldb, "select skill_type_id, skill_type_name from tbl_skill_type")
+
+skill_set_insert <-
+                   skill_set %>%  
+                   inner_join(skill_types, by=c("skill_type" = "skill_type_name")) %>%
+                   select(skill_set_id, skill_type_id, skill_set_name, skill_set_description)
+
+## delete the table tbl_skills_categories
+del <- dbGetQuery(skilldb, "delete from tbl_skill_set")
+
+# write the dataframe to the mySQL table
+dbWriteTable(skilldb, value = skill_set_insert, name = "tbl_skill_set", append = TRUE, row.names = NA, header = FALSE) 
+
+rs <- dbGetQuery(skilldb, "select count(*) from tbl_skill_set")
+
+if (rs == 0) printf("No Rows Loaded into tbl_skill_set!")
+
+#close the connection
+dbDisconnect(skilldb)
+
+
+##################################################################
+# KEITH F
+# Load tbl_skill_set_xref from the CSV file on GitHub
+#
+##################################################################
+
+# establish the connection to the skill DB on db4free.net
+skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
+
+# GitHub location 
+URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Category_Xref.csv"
+
+# read the skills-to-skillset file into a dataframe
+skill_category_xref <- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
+
+# pull down the skill table for the skill_id and name
+skills <-  dbGetQuery(skilldb, "select skill_id, skill_name from tbl_skill")
+
+# pull down the skill set table for the sKill_set_id and name
+skill_sets <- dbGetQuery(skilldb, "select skill_set_id, skill_set_name from tbl_skill_set")
+
+# use dplr to build the dataframe to insert into tbl_skill_set_xref
+skill_set_xref_insert <- 
+                        skill_category_xref %>% 
+                        inner_join(skills, by=c("Raw.Skill"="skill_name")) %>%
+                        inner_join(skill_sets, by=c("Category"="skill_set_name"))  %>%
+                        select(skill_set_id, skill_id)
+
+# delete the skill set cross references
+del <- dbGetQuery(skilldb, "delete from tbl_skill_set_xref")
+
+# write the dataframe to the mySQL table
+dbWriteTable(skilldb, value = skill_set_xref_insert, name = "tbl_skill_set_xref", append = TRUE, row.names = NA, header = FALSE) 
+
+rs <- dbGetQuery(skilldb, "select count(*) from tbl_skill_set_xref")
+
+if (rs == 0) printf("No Rows Loaded into tbl_skill_set_xref!")
+
+#close the connection
+dbDisconnect(skilldb)
+
+#KEITH F
+##########################################################################################################
+
+
+
+```
+
+
 Populate the normalized table of values
 
 ```{r}
 
-
 # populate the data table
-sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) ",
-              "SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         ",
+sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_set_id, skill_id, source_id, rating) ",
+              "SELECT s.skill_type_id, sx.skill_set_id, s.skill_id, i.source_id, i.rating         ",
               "FROM tbl_skill s                                                  ",
-              "JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      ",
+              "JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      ",              
+              "JOIN tbl_skill_set_xref sx ON s.skill_id = sx.skill_id            ",
               "JOIN tbl_import i ON i.skill_name = s.skill_name;                 ", sep = "")
 sqlQuery(db,sSQL)
 
+
 ```
 
-To make it easier to create analysis views, create a master view with all the descriptors
+To make it easier to create analysis, also create a denormalized table with descriptors
 
 ```{r, echo=FALSE}
 
-sqlQuery(db,"DROP VIEW IF EXISTS `vw_data`;")
-sSQL <- paste("CREATE VIEW `vw_data` AS ",
-              "SELECT s.skill_type_id, s.skill_id, i.source_id, st.skill_type_name, s.skill_name, so.source_name, so.source_description, i.rating ",
-              "FROM tbl_skill s ",
-              "JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id ",
-              "JOIN tbl_import i ON i.skill_name = s.skill_name ",
-              "JOIN tbl_source so ON so.source_id = i.source_id;")
+
+#make a denormalized table with the analysis fields in it
+sqlQuery(db,"DELETE FROM tbl_data;") # first truncate it
+# populate the table
+sSQL <- paste(
+"INSERT INTO tbl_data (skill_type_id, skill_set_id, skill_id, source_id, skill_type_name, skill_set_name, skill_name, source_name, rating) ",
+"SELECT d.skill_type_id, d.skill_set_id, d.skill_id, d.source_id, st.skill_type_name, ss.skill_set_name, s.skill_name, so.source_name, d.rating ", 
+"FROM tbl_data_n d ", 
+"JOIN tbl_skill_type st ON d.skill_type_id = st.skill_type_id ", 
+"JOIN tbl_skill_set  ss ON d.skill_set_id  = ss.skill_set_id ",  
+"JOIN tbl_skill       s ON d.skill_id      =  s.skill_id ",
+"JOIN tbl_source     so ON d.source_id     = so.source_id;", sep = "")
 sqlQuery(db,sSQL)  
 
-#Also make a denormalized table with the analysis fields in it
-sqlQuery(db,"DELETE FROM tbl_data;") # first truncate it
-sSQL = "INSERT INTO tbl_data (skill_type_id, skill_id, source_id, skill_type_name, skill_name, source_name, source_description, rating) SELECT skill_type_id, skill_id, source_id, skill_type_name, skill_name, source_name, source_description, rating FROM vw_data;"
+#copy the skill set id to the skill table  2 values are missing
+sSQL <- "UPDATE tbl_skill s JOIN tbl_skill_set_xref sx  ON sx.skill_id = s.skill_id  SET s.skill_set_id = sx.skill_set_id;"
 sqlQuery(db,sSQL)  
 
 ```
@@ -156,5 +258,6 @@ Next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.
 so the presenter will get a set of views, which they can get with a single line of code
 like this "df <- sqlQuery(db,"SELECT * FROM vw_Top10_Skills_All")"
 ```
+
 
 

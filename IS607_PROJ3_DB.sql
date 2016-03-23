@@ -2,6 +2,7 @@
 -- Create a database to help evaluate relative desirability of data science skills
 DROP SCHEMA IF EXISTS skill;
 CREATE SCHEMA skill;
+
 USE skill;
 
 -- Create the tbl_import
@@ -26,6 +27,7 @@ PRIMARY KEY (`source_id`));
 DROP TABLE IF EXISTS `tbl_skill`;
 CREATE TABLE `tbl_skill` (
 `skill_id`           int(11)   NOT NULL auto_increment,
+`skill_set_id`       int(11)   NULL,
 `skill_type_id`      int(11)   NOT NULL,
 `skill_name`         char(100) NOT NULL,
 `skill_description`  char(255) NULL,
@@ -47,10 +49,11 @@ CREATE TABLE `tbl_skill_set` (
 `skill_set_description`  char(255) NULL,
 PRIMARY KEY (`skill_set_id`));
 
-CREATE TABLE `tbl_skill_set_xref` (
-  `skill_set_id` int(11) NOT NULL,
-  `skill_id` int(11) NOT NULL,
-  PRIMARY KEY (`skill_set_id`,`skill_id`));
+DROP TABLE IF EXISTS `tbl_skill_set_xref`;
+CREATE TABLE `tbl_skill_set_xref` (  
+ `skill_set_id` int(11) NOT NULL,  
+ `skill_id` int(11) NOT NULL, 
+ PRIMARY KEY (`skill_set_id`,`skill_id`));  
 
 -- normalized representation
 DROP TABLE IF EXISTS `tbl_data_n`;
@@ -74,19 +77,11 @@ CREATE TABLE `tbl_data` (
 `skill_set_name`          char(100) NOT NULL,
 `skill_name`              char(100) NULL,
 `source_name`             char(100) NULL,
-`source_description`      char(100) NULL,
 `rating`                  float     NULL,
-`rating_scalar_global`    float     NULL,
-`rating_scalar_local`     float     NULL,
-`weighted_rating_global`  float     NULL,
-`weighted_rating_local`   float     NULL,
-`z_score_global`          float     NULL,
-`z_score_local`           float     NULL,
-`rel_rank_global`         float     NULL,
-`rel_rank_local`          float     NULL)
-
-
-
+`rating_scalar`           float     NULL,
+`weighted_rating_overall`         float     NULL,
+`weighted_rating_by_skill_type`   float     NULL,
+`weighted_rating_by_skill_set`    float     NULL)
 
 
 

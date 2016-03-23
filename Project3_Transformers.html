@@ -68,68 +68,191 @@ img {
 </div>
 
 
-<pre><code>#save in case we need this
-sqlUpdate(channel, dat, tablename = NULL, index = NULL, verbose = FALSE, test = FALSE, nastring = NULL, fast = TRUE)
-</code></pre>
-<p>if we don’t have an ODBC driver, can connect to the db using rMySQL</p>
-<pre><code>library(RMySQL)
-db &lt;- dbConnect(MySQL(), user='project3', password='CUNYRBridge4', dbname='skill', host='85.10.205.173')
-dbListTables(db)
-dbDisconnect(db)</code></pre>
-<pre><code>## [1] &quot;No Data&quot;</code></pre>
-<pre><code>## [1] &quot;No Data&quot;</code></pre>
-<p>Deduplicate the data and setup the Skills Types, Skills Names tables</p>
+<pre><code>## character(0)</code></pre>
+<pre><code>## character(0)</code></pre>
+<p>De-duplicate the imported data and setup the Skill Types, Skill Names tables</p>
 <pre><code>## character(0)</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
-<pre><code>## [1] &quot;HY000 1701 [MySQL][ODBC 5.3(a) Driver][mysqld-5.7.11]Cannot truncate a table referenced in a foreign key constraint (`skill`.`tbl_data_n`, CONSTRAINT `tbl_data_n_ibfk_2` FOREIGN KEY (`skill_id`) REFERENCES `skill`.`tbl_skill` (`skill_id`))&quot;
-## [2] &quot;[RODBC] ERROR: Could not SQLExecDirect 'TRUNCATE TABLE tbl_skill;'&quot;</code></pre>
-<pre><code>## [1] &quot;HY000 1701 [MySQL][ODBC 5.3(a) Driver][mysqld-5.7.11]Cannot truncate a table referenced in a foreign key constraint (`skill`.`tbl_data_n`, CONSTRAINT `tbl_data_n_ibfk_1` FOREIGN KEY (`skill_type_id`) REFERENCES `skill`.`tbl_skill_type` (`skill_type_id`))&quot;
-## [2] &quot;[RODBC] ERROR: Could not SQLExecDirect 'TRUNCATE TABLE tbl_skill_type'&quot;</code></pre>
+<pre><code>## [1] &quot;No Data&quot;</code></pre>
+<pre><code>## [1] &quot;No Data&quot;</code></pre>
 <pre><code>## character(0)</code></pre>
+<p>populate skill sets and the cross references to skills (Keith)</p>
+<pre class="r"><code>##########################################################################################################
+#KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
+
+library(RMySQL)</code></pre>
+<pre><code>## Warning: package 'RMySQL' was built under R version 3.2.3</code></pre>
+<pre><code>## Loading required package: DBI</code></pre>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: 'dplyr'</code></pre>
+<pre><code>## The following objects are masked from 'package:stats':
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code># proj_user &lt;- &quot;root&quot;
+# proj_pwd  &lt;- &quot;CUNYRBridge4!&quot;
+# proj_db   &lt;- &quot;skill&quot;
+# proj_host &lt;- &quot;localhost&quot;
+
+
+proj_user &lt;- &quot;project3&quot;
+proj_pwd  &lt;- &quot;CUNYRBridge4&quot;
+proj_db   &lt;- &quot;skill&quot;
+proj_host &lt;- &quot;db4free.net&quot;
+
+
+
+
+##################################################################
+#KEITH F
+# Load tbl_skill_set from the CSV file on GitHub
+#
+##################################################################
+
+# establish the connection to the skill DB on db4free.ne
+skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
+
+# GitHub location 
+#URL &lt;- &quot;C:/Users/keith/Documents/DataScience/CUNY/DATA607/Projects/Project3/Skill_Categories.csv&quot;
+
+URL &lt;- &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Categories.csv&quot;
+
+# read the skillsets file into a dataframe
+skill_set &lt;- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
+
+# sync dataframe columns to match the target table
+
+skill_set$skill_set_id &lt;- rownames(skill_set)
+
+colnames(skill_set) &lt;- c(&quot;skill_set_name&quot;, &quot;skill_set_description&quot;, &quot;skill_type&quot;, &quot;skill_set_id&quot;)
+
+# pull down skill types from MySQL
+skill_types &lt;-  dbGetQuery(skilldb, &quot;select skill_type_id, skill_type_name from tbl_skill_type&quot;)
+
+skill_set_insert &lt;-
+                   skill_set %&gt;%  
+                   inner_join(skill_types, by=c(&quot;skill_type&quot; = &quot;skill_type_name&quot;)) %&gt;%
+                   select(skill_set_id, skill_type_id, skill_set_name, skill_set_description)
+
+## delete the table tbl_skills_categories
+del &lt;- dbGetQuery(skilldb, &quot;delete from tbl_skill_set&quot;)
+
+# write the dataframe to the mySQL table
+dbWriteTable(skilldb, value = skill_set_insert, name = &quot;tbl_skill_set&quot;, append = TRUE, row.names = NA, header = FALSE) </code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>rs &lt;- dbGetQuery(skilldb, &quot;select count(*) from tbl_skill_set&quot;)
+
+if (rs == 0) printf(&quot;No Rows Loaded into tbl_skill_set!&quot;)
+
+#close the connection
+dbDisconnect(skilldb)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>##################################################################
+# KEITH F
+# Load tbl_skill_set_xref from the CSV file on GitHub
+#
+##################################################################
+
+# establish the connection to the skill DB on db4free.net
+skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
+
+# GitHub location 
+URL &lt;- &quot;https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Category_Xref.csv&quot;
+
+# read the skills-to-skillset file into a dataframe
+skill_category_xref &lt;- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
+
+# pull down the skill table for the skill_id and name
+skills &lt;-  dbGetQuery(skilldb, &quot;select skill_id, skill_name from tbl_skill&quot;)
+
+# pull down the skill set table for the sKill_set_id and name
+skill_sets &lt;- dbGetQuery(skilldb, &quot;select skill_set_id, skill_set_name from tbl_skill_set&quot;)
+
+# use dplr to build the dataframe to insert into tbl_skill_set_xref
+skill_set_xref_insert &lt;- 
+                        skill_category_xref %&gt;% 
+                        inner_join(skills, by=c(&quot;Raw.Skill&quot;=&quot;skill_name&quot;)) %&gt;%
+                        inner_join(skill_sets, by=c(&quot;Category&quot;=&quot;skill_set_name&quot;))  %&gt;%
+                        select(skill_set_id, skill_id)
+
+# delete the skill set cross references
+del &lt;- dbGetQuery(skilldb, &quot;delete from tbl_skill_set_xref&quot;)
+
+# write the dataframe to the mySQL table
+dbWriteTable(skilldb, value = skill_set_xref_insert, name = &quot;tbl_skill_set_xref&quot;, append = TRUE, row.names = NA, header = FALSE) </code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>rs &lt;- dbGetQuery(skilldb, &quot;select count(*) from tbl_skill_set_xref&quot;)
+
+if (rs == 0) printf(&quot;No Rows Loaded into tbl_skill_set_xref!&quot;)
+
+#close the connection
+dbDisconnect(skilldb)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>#KEITH F
+##########################################################################################################</code></pre>
 <p>Populate the normalized table of values</p>
 <pre class="r"><code># populate the data table
-sSQL &lt;- paste(&quot;INSERT INTO tbl_data_n (skill_type_id, skill_id, source_id, rating) &quot;,
-              &quot;SELECT s.skill_type_id, s.skill_id, i.source_id, i.rating         &quot;,
+sSQL &lt;- paste(&quot;INSERT INTO tbl_data_n (skill_type_id, skill_set_id, skill_id, source_id, rating) &quot;,
+              &quot;SELECT s.skill_type_id, sx.skill_set_id, s.skill_id, i.source_id, i.rating         &quot;,
               &quot;FROM tbl_skill s                                                  &quot;,
-              &quot;JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      &quot;,
+              &quot;JOIN tbl_skill_type st ON s.skill_type_id = st.skill_type_id      &quot;,              
+              &quot;JOIN tbl_skill_set_xref sx ON s.skill_id = sx.skill_id            &quot;,
               &quot;JOIN tbl_import i ON i.skill_name = s.skill_name;                 &quot;, sep = &quot;&quot;)
 sqlQuery(db,sSQL)</code></pre>
 <pre><code>## character(0)</code></pre>
-<p>To make it easier to create analysis views, create a master view with all the descriptors</p>
+<p>To make it easier to create analysis, also create a denormalized table with descriptors</p>
 <pre><code>## [1] &quot;No Data&quot;</code></pre>
-<pre><code>## [1] &quot;No Data&quot;</code></pre>
-<pre><code>## [1] &quot;No Data&quot;</code></pre>
+<pre><code>## character(0)</code></pre>
 <pre><code>## character(0)</code></pre>
 <p>Show how to query the data</p>
 <pre class="r"><code>df &lt;- sqlQuery(db,&quot;SELECT * FROM tbl_data;&quot;)
 head(df)</code></pre>
-<pre><code>##   skill_type_id skill_id source_id skill_type_name    skill_name
-## 1             1        1         1        business      analysis
-## 2             1        2         1        business      business
-## 3             1       16         1        business      research
-## 4             2       22         1   communication communication
-## 5             2       23         1   communication      creative
-## 6             2       24         1   communication interpersonal
-##   source_name source_description rating z_score_global rel_rank_global
-## 1      Kaggle             Kaggle      2             NA              NA
-## 2      Kaggle             Kaggle     14             NA              NA
-## 3      Kaggle             Kaggle      4             NA              NA
-## 4      Kaggle             Kaggle     11             NA              NA
-## 5      Kaggle             Kaggle      4             NA              NA
-## 6      Kaggle             Kaggle      9             NA              NA
-##   scalar_global z_score_local rel_rank_local scalar_local
-## 1            NA            NA             NA           NA
-## 2            NA            NA             NA           NA
-## 3            NA            NA             NA           NA
-## 4            NA            NA             NA           NA
-## 5            NA            NA             NA           NA
-## 6            NA            NA             NA           NA</code></pre>
+<pre><code>##   skill_type_id skill_set_id skill_id source_id skill_type_name
+## 1             1           12        1         1        business
+## 2             1           20        2         1        business
+## 3             1           20       16         1        business
+## 4             2           24       22         1   communication
+## 5             2           31       23         1   communication
+## 6             2           24       24         1   communication
+##                skill_set_name    skill_name source_name rating
+## 1        Classical Statistics      analysis      Kaggle      2
+## 2 Industry-Specific Knowledge      business      Kaggle     14
+## 3 Industry-Specific Knowledge      research      Kaggle      4
+## 4               Communication communication      Kaggle     11
+## 5           Creative Thinking      creative      Kaggle      4
+## 6               Communication interpersonal      Kaggle      9
+##   rating_scalar weighted_rating_overall weighted_rating_by_skill_type
+## 1            NA                      NA                            NA
+## 2            NA                      NA                            NA
+## 3            NA                      NA                            NA
+## 4            NA                      NA                            NA
+## 5            NA                      NA                            NA
+## 6            NA                      NA                            NA
+##   weighted_rating_by_skill_set
+## 1                           NA
+## 2                           NA
+## 3                           NA
+## 4                           NA
+## 5                           NA
+## 6                           NA</code></pre>
 <pre class="r"><code>class(df)</code></pre>
 <pre><code>## [1] &quot;data.frame&quot;</code></pre>
 <p>Next we want to add scaled values, (from 0 to 1) linear, and also logarithmic.</p>
 <pre><code>so the presenter will get a set of views, which they can get with a single line of code
 like this &quot;df &lt;- sqlQuery(db,&quot;SELECT * FROM vw_Top10_Skills_All&quot;)&quot;</code></pre>
+<p>my actions</p>
+<ol style="list-style-type: decimal">
+<li>populate global scalar rating</li>
+<li>global (relative) rank</li>
+<li><p>local (relative) rank</p></li>
+<li>add local weighted_rating to tbl_data and data_n</li>
+<li><p>add global weighted rating</p></li>
+<li><p>grab the new stuff: skill_set_id and skill_set_name to tbl_Data</p></li>
+</ol>
 
 
 </div>
