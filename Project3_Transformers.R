@@ -2,8 +2,8 @@
 ## ROB
 # Establish connection to the database
 library(RODBC)
-#cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
-cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
+cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
+#cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
@@ -68,10 +68,10 @@ sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT 
 library(RMySQL)
 library(dplyr)
 
-#proj_user <- "root"
-#proj_pwd  <- "CUNYRBridge4!"
-#proj_db   <- "skill"
-#proj_host <- "localhost"
+# proj_user <- "root"
+# proj_pwd  <- "CUNYRBridge4!"
+# proj_db   <- "skill"
+# proj_host <- "localhost"
 proj_user <- "project3"
 proj_pwd  <- "CUNYRBridge4"
 proj_db   <- "skill"
@@ -163,9 +163,7 @@ if (rs == 0) printf("No Rows Loaded into tbl_skill_set_xref!")
 #close the connection
 dbDisconnect(skilldb)
 
-#KEITH F
 ##########################################################################################################
-
 
 
 #Populate the normalized table of values
@@ -201,8 +199,87 @@ sqlQuery(db,sSQL)
 
 
 
+
+
+#NEW 3/23 10pm
+######################################################
+#Normalize all values (1 to 100)
+
+skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
+
+#calculate the max and min ratings within each source and post to temporary table
+df <- dbGetQuery(skilldb, "SELECT source_id, MAX(rating) rating_max, MIN(rating) rating_min FROM tbl_data GROUP BY source_id;")
+dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
+dbWriteTable(skilldb, name="df_temp", value=df)
+
+#normalize the ratings from 0 to 100
+dbSendQuery(skilldb, "
+            UPDATE tbl_data d, df_temp t 
+            SET d.rating_scalar = ROUND((d.rating - t.rating_min) / (t.rating_max - t.rating_min),2)*100 
+            WHERE d.source_id = t.source_id;")
+
+#since this is a discrete series, set all the minimum values to one, instead of zero
+dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skills_Overall` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+
+# 
+# dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_By_Source")
+# dbSendQuery(skilldb, "
+#             CREATE VIEW `vw_Top10_Skills_By_Source` AS
+#             SELECT source_name, skill_name, SUM(rating_scalar) 
+#             FROM tbl_data 
+#             GROUP BY source_name, skill_name 
+#             ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #####################################################################
-##KEITH B
+##KEITH F
 
 library(RMySQL)
 library(dplyr)
@@ -217,7 +294,7 @@ proj_host <- "db4free.net"
 ## Using RMYSQL
 ## ------------------------------------------
 
-# establish the connection to the skill DB on db4free.net
+# establish the connection to the skill DB
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
 # load the processed source data into a dataframe from the tbl_data
@@ -489,14 +566,6 @@ dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, 
 df1 <- select(dfrankskiltypeoverall, skill_id, source_id, rating_skill_type_overall)
 df2 <- select(dfrankskilltypesource, skill_id, source_id, rating_skill_type_source)
 df3 <- select(dfrankskillsetname, skill_id, source_id, ranking_skill_set_name)
-
-df1
-
-df2
-
-df3
-
-
 
 # Combine the three dataframes into one table joining on skill_id and source_id
 #df1 <- merge(df1, df2, by=c("skill_id"="skill_id", "source_id"="source_id")) # alternate method
