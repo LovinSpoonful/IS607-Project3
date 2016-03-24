@@ -13,7 +13,6 @@ sources <- c("https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/mas
              "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/11-fanelli-data-cleaned.csv")
 
 # Import all the source data into the database
-
 sqlQuery(db,"DELETE FROM tbl_import;") # first truncate the imported records table
 sqlQuery(db,"DELETE FROM tbl_source;") # also empty the source table
 
@@ -61,6 +60,12 @@ sqlSave(db, df1, tablename = "tbl_skill_type", rownames=FALSE, append=TRUE) # wr
 sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;")
 
 
+
+
+
+
+
+
 #populate skill sets and the cross references to skills (Keith)
 ##########################################################################################################
 #KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
@@ -76,6 +81,13 @@ proj_user <- "project3"
 proj_pwd  <- "CUNYRBridge4"
 proj_db   <- "skill"
 proj_host <- "db4free.net"
+
+
+
+
+
+
+
 
 ##################################################################
 #KEITH F
@@ -199,11 +211,8 @@ sqlQuery(db,sSQL)
 
 
 
-
-
-#NEW 3/23 10pm
+#NEW 3/23 ROB
 ######################################################
-#Normalize all values (1 to 100)
 
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
@@ -213,10 +222,11 @@ dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
 dbWriteTable(skilldb, name="df_temp", value=df)
 
 #normalize the ratings from 0 to 100
+dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = NULL;")
 dbSendQuery(skilldb, "
             UPDATE tbl_data d, df_temp t 
             SET d.rating_scalar = ROUND((d.rating - t.rating_min) / (t.rating_max - t.rating_min),2)*100 
-            WHERE d.source_id = t.source_id;")
+            WHERE d.source_id = t.source_id;") # AND t.source_ID <> 2
 
 #since this is a discrete series, set all the minimum values to one, instead of zero
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
@@ -229,51 +239,52 @@ dbSendQuery(skilldb, "
             GROUP BY skill_name 
             ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
 
-# 
-# dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_By_Source")
-# dbSendQuery(skilldb, "
-#             CREATE VIEW `vw_Top10_Skills_By_Source` AS
-#             SELECT source_name, skill_name, SUM(rating_scalar) 
-#             FROM tbl_data 
-#             GROUP BY source_name, skill_name 
-#             ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall_excluding_rjMetrics;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skills_Overall_excluding_rjMetrics` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data
+            WHERE source_name <> 'RJMETRICS'
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
 
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skill_Sets_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skill_Sets_Overall` AS
+            SELECT skill_set_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_set_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
 
+dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top10_Skills_By_Source;")
+df <- dbGetQuery(skilldb, "
+      SELECT source_name, skill_name, rating_scalar, source_rank
+      FROM
+       (SELECT source_name, skill_name, rating_scalar,
+               @source_rank := IF(@source_id_current = source_id,@source_rank+1,1) AS source_rank,
+               @source_id_current := source_id
+        FROM tbl_data
+        ORDER BY source_id, rating_scalar DESC
+       ) ranked
+      WHERE source_rank <= 10;")
+dbWriteTable(skilldb, name="tbl_Top10_Skills_By_Source", value=df)
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_By_Source;")
+dbSendQuery(skilldb, "CREATE VIEW `vw_Top10_Skills_By_Source` AS SELECT * FROM tbl_Top10_Skills_By_Source;")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top5_Skills_By_Skill_Set;")
+df <- dbGetQuery(skilldb, "
+                 SELECT skill_set_name, skill_name, rating_scalar, skill_set_rank
+                 FROM
+                 (SELECT skill_set_name, skill_name, rating_scalar,
+                 @skill_set_rank := IF(@skill_set_id_current = skill_set_id,@skill_set_rank+1,1) AS skill_set_rank,
+                 @skill_set_id_current := skill_set_id
+                 FROM tbl_data
+                 ORDER BY skill_set_id, rating_scalar DESC
+                 ) ranked
+                 WHERE skill_set_rank <= 5;")
+dbWriteTable(skilldb, name="tbl_Top5_Skills_By_Skill_Set", value=df)
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top5_Skills_By_Skill_Set;")
+dbSendQuery(skilldb, "CREATE VIEW `vw_Top5_Skills_By_Skill_Set` AS SELECT * FROM tbl_Top5_Skills_By_Skill_Set;")
 
 
 
