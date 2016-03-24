@@ -1,33 +1,33 @@
-Skill Category,Skill Keyword,X1,X2,X3
-Algorithms,"computational complexity, CS theory, algorithm design",Data Developers,Data Researchers,NA
-Back-End Programming,"Java, Rails, Ruby, Perl",Data Creatives,Data Developers,NA
-Bayesian/Monte-Carlo Statistics,"MCMC, BUGS, Monte-Carlo Statistics, Bayesian Statistics, Bayes networks",Data Developers,Data Researchers,NA
-Big and Distributed Data,"Hadoop, Map/Reduce, Pig, mapping, Hive, Hadoop, fintech, Distributed Data, data natives, data mining, data engineering, big data",Data Business People,Data Creatives,Data Developers
-Business,"management, business development, budgeting, business",Data Business People,NA,NA
-Classical Statistics,"general linear model, ANOVA, statistics, GLM, analytics, analysis",Data Business People,Data Creatives,Data Researchers
-Data Manipulation,"regexes, web scraping, RegEx",Data Creatives,Data Researchers,NA
-Front-End Programming,"JavaScript, HTML, CSS, web development",Data Creatives,Data Developers,NA
-Graphical Models,"social networks, Bayes networks, neural nets, network, Graphical Models",Data Developers,Data Researchers,NA
-Machine Learning,"decision trees, neural nets, SVM, clustering, predictive analytics, machine learning, clustering",Data Creatives,Data Developers,NA
-Math,"linear algebra, real analysis, calculus, math",Data Developers,Data Researchers,NA
-Optimization,"linear, integer, convex, global, integer Optimization, global Optimization, convex Optimization",Data Developers,Data Researchers,NA
-Product Development,"design, project management, team, Product Development, devops, design",Data Business People,NA,NA
-Science,"experimental design, technical writing/publishing",Data Creatives,Data Researchers,NA
-Simulation,"discrete, agent-based, continuous, Simulation, discrete Simulation, continuous Simulation, agent-based Simulation",Data Developers,Data Researchers,NA
-Spatial Statistics,"geographic covariates, GIS, Spatial Statistics",Data Creatives,Data Researchers,NA
-Structured Data,"SQL, JSON, XML, Structured Data, RSS, galaxql",Data Creatives,Data Developers,NA
-Surveys and Marketing,"multinomial modeling, Surveys and Marketing, modeling",Data Creatives,Data Researchers,NA
-Systems Administration,"nix, DBA, cloud tech., UNIX, Systems Administration, storage, media, DBA, cloud tech, cloud",Data Creatives,Data Developers,NA
-Temporal Statistics,"forecasting, time-series analysis",Data Creatives,Data Researchers,NA
-Unstructured Data,"NOSQL, text mining, Unstructured Data, pattern discovery",Data Creatives,Data Developers,NA
-Visualization,"statistical graphics, mapping, web-based data-viz, visualization, tableau, statistical graphics, business intelligence",Data Creatives,Data Researchers,NA
-Relational Databases,"Teradata, PostgreSQL, Oracle, MySQL",,,
-Statistical Programming,"Stata, SPSS, SAS, R",,,
-General Programming,"sofware engineering, programming",,,
-Information Security,"security and risk strategy, policy, information",,,
-Industry-Specific Knowledge,"retail, research, manufacturing, government, ai  law",,,
-Object-Oriented Programming,"Python, Objective C, C++, C",,,
-Communication,"presentation, leadership, interpersonal, entrepreneurship, communication",,,
-Mobile Devices,"mobile development, IOS",,,
-Mathematical Programming,MATLAB,,,
-Creative Thinking,"creativity, creative",,,
+Skill Type,Skill Category,Skill Keyword,X1,X2,X3
+math,Algorithms,"computational complexity, CS theory, algorithm design",Data Developers,Data Researchers,NA
+programming,Back-End Programming,"Java, Rails, Ruby, Perl",Data Creatives,Data Developers,NA
+math,Bayesian/Monte-Carlo Statistics,"MCMC, BUGS, Monte-Carlo Statistics, Bayesian Statistics, Bayes networks",Data Developers,Data Researchers,NA
+programming,Big and Distributed Data,"Hadoop, Map/Reduce, Pig, mapping, Hive, Hadoop, fintech, Distributed Data, data natives, data mining, data engineering, big data",Data Business People,Data Creatives,Data Developers
+business,Business,"management, business development, budgeting, business",Data Business People,NA,NA
+math,Classical Statistics,"general linear model, ANOVA, statistics, GLM, analytics, analysis",Data Business People,Data Creatives,Data Researchers
+programming,Data Manipulation,"regexes, web scraping, RegEx",Data Creatives,Data Researchers,NA
+programming,Front-End Programming,"JavaScript, HTML, CSS, web development",Data Creatives,Data Developers,NA
+visualization,Graphical Models,"social networks, Bayes networks, neural nets, network, Graphical Models",Data Developers,Data Researchers,NA
+programming,Machine Learning,"decision trees, neural nets, SVM, clustering, predictive analytics, machine learning, clustering",Data Creatives,Data Developers,NA
+math,Math,"linear algebra, real analysis, calculus, math",Data Developers,Data Researchers,NA
+math,Optimization,"linear, integer, convex, global, integer Optimization, global Optimization, convex Optimization",Data Developers,Data Researchers,NA
+business,Product Development,"design, project management, team, Product Development, devops, design",Data Business People,NA,NA
+business,Science,"experimental design, technical writing/publishing",Data Creatives,Data Researchers,NA
+math,Simulation,"discrete, agent-based, continuous, Simulation, discrete Simulation, continuous Simulation, agent-based Simulation",Data Developers,Data Researchers,NA
+math,Spatial Statistics,"geographic covariates, GIS, Spatial Statistics",Data Creatives,Data Researchers,NA
+programming,Structured Data,"SQL, JSON, XML, Structured Data, RSS, galaxql",Data Creatives,Data Developers,NA
+math,Surveys and Marketing,"multinomial modeling, Surveys and Marketing, modeling",Data Creatives,Data Researchers,NA
+programming,Systems Administration,"nix, DBA, cloud tech., UNIX, Systems Administration, storage, media, DBA, cloud tech, cloud",Data Creatives,Data Developers,NA
+math,Temporal Statistics,"forecasting, time-series analysis",Data Creatives,Data Researchers,NA
+programming,Unstructured Data,"NOSQL, text mining, Unstructured Data, pattern discovery",Data Creatives,Data Developers,NA
+visualization,Visualization,"statistical graphics, mapping, web-based data-viz, visualization, tableau, statistical graphics, business intelligence",Data Creatives,Data Researchers,NA
+programming,Relational Databases,"Teradata, PostgreSQL, Oracle, MySQL",,,
+programming,Statistical Programming,"Stata, SPSS, SAS, R",,,
+programming,General Programming,"sofware engineering, programming",,,
+programming,Information Security,"security and risk strategy, policy, information",,,
+business,Industry-Specific Knowledge,"retail, research, manufacturing, government, ai  law",,,
+programming,Object-Oriented Programming,"Python, Objective C, C++, C",,,
+communication,Communication,"presentation, leadership, interpersonal, entrepreneurship, communication",,,
+programming,Mobile Devices,"mobile development, IOS",,,
+programming,Mathematical Programming,MATLAB,,,
+business,Creative Thinking,"creativity, creative",,,
