@@ -231,6 +231,13 @@ dbSendQuery(skilldb, "
 #since this is a discrete series, set all the minimum values to one, instead of zero
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
 
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
+dbSendQuery(skilldb,"
+            CREATE VIEW `vw_Skill_Type_Frequency_Percent` AS
+            SELECT skill_type_name, ROUND(sum(rating_scalar) / (SELECT SUM(rating_scalar) FROM tbl_data),2)*100 AS Frequency_Percent
+            FROM tbl_data
+            GROUP BY skill_type_name ORDER BY sum(rating_scalar) DESC;")
+
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall;")
 dbSendQuery(skilldb, "
             CREATE VIEW `vw_Top10_Skills_Overall` AS
@@ -285,6 +292,38 @@ df <- dbGetQuery(skilldb, "
 dbWriteTable(skilldb, name="tbl_Top5_Skills_By_Skill_Set", value=df)
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top5_Skills_By_Skill_Set;")
 dbSendQuery(skilldb, "CREATE VIEW `vw_Top5_Skills_By_Skill_Set` AS SELECT * FROM tbl_Top5_Skills_By_Skill_Set;")
+
+
+dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top5_Skill_Sets_By_Skill_Type;")
+df <- dbGetQuery(skilldb, "
+                 SELECT skill_type_name, skill_set_name, rating_scalar, skill_type_rank
+                 FROM
+                 (SELECT skill_type_name, skill_set_name, rating_scalar,
+                 @skill_type_rank := IF(@skill_type_id_current = skill_type_id,@skill_type_rank+1,1) AS skill_type_rank,
+                 @skill_type_id_current := skill_type_id
+                 FROM tbl_data
+                 ORDER BY skill_type_id, rating_scalar DESC
+                 ) ranked
+                 WHERE skill_type_rank <= 5;")
+dbWriteTable(skilldb, name="tbl_Top5_Skill_Sets_By_Skill_Type", value=df)
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top5_Skill_Sets_By_Skill_Type;")
+dbSendQuery(skilldb, "CREATE VIEW `vw_Top5_Skill_Sets_By_Skill_Type` AS SELECT * FROM tbl_Top5_Skill_Sets_By_Skill_Type;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skills_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Bottom10_Skills_Overall` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) LIMIT 10;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skill_Sets_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Bottom10_Skill_Sets_Overall` AS
+            SELECT skill_set_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_set_name 
+            ORDER BY SUM(rating_scalar) LIMIT 10;")
 
 
 
