@@ -600,7 +600,7 @@ oop <- subset(rs, rs$skill_set_name == "Object-Oriented Programming")
 sp <- subset(rs, rs$skill_set_name == "Statistical Programming")
 st <- subset(rs, rs$skill_set_name == "Structured Data")
 v <- subset(rs, rs$skill_set_name == "Visualization")
-a <- subset(rs, rs$skill_set_name == "Algorithms")
+#a <- subset(rs, rs$skill_set_name == "Algorithms")
 is <- subset(rs, rs$skill_set_name == "Information Security")
 ud <- subset(rs, rs$skill_set_name == "Unstructured Data")
 sa <- subset(rs, rs$skill_set_name == "Systems Administration")
@@ -635,7 +635,7 @@ oop$weight_skill_set_name <- NROW(oop)/total
 sp$weight_skill_set_name <- NROW(sp)/total
 st$weight_skill_set_name <- NROW(st)/total
 v$weight_skill_set_name <- NROW(v)/total
-a$weight_skill_set_name <- NROW(a)/total
+#a$weight_skill_set_name <- NROW(a)/total
 is$weight_skill_set_name <- NROW(is)/total
 ud$weight_skill_set_name <- NROW(ud)/total
 sa$weight_skill_set_name <- NROW(sa)/total
@@ -668,7 +668,7 @@ oop$ranking_skill_set_name <- oop$weight_skill_set_name * oop$rating
 sp$ranking_skill_set_name <- sp$weight_skill_set_name * sp$rating
 st$ranking_skill_set_name <- st$weight_skill_set_name * st$rating
 v$ranking_skill_set_name <- v$weight_skill_set_name * v$rating
-a$ranking_skill_set_name <- a$weight_skill_set_name * a$rating
+#a$ranking_skill_set_name <- a$weight_skill_set_name * a$rating
 is$ranking_skill_set_name <- is$weight_skill_set_name * is$rating
 ud$ranking_skill_set_name <- ud$weight_skill_set_name * ud$rating
 sa$ranking_skill_set_name <- sa$weight_skill_set_name * sa$rating
@@ -684,8 +684,8 @@ rd$ranking_skill_set_name <- rd$weight_skill_set_name * rd$rating
 dm$ranking_skill_set_name <- dm$weight_skill_set_name * dm$rating
 ss$ranking_skill_set_name <- ss$weight_skill_set_name * ss$rating
 
-dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, sp, oop, st, v, a, is, ud, sa, md, gm, fep, ts, o, s, bs, sim, rd, dm, ss)
-
+#dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, sp, oop, st, v, a, is, ud, sa, md, gm, fep, ts, o, s, bs, sim, rd, dm, ss)
+dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, sp, oop, st, v, is, ud, sa, md, gm, fep, ts, o, s, bs, sim, rd, dm, ss)
 
 
 
