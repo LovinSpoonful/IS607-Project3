@@ -2,8 +2,8 @@
 ## ROB
 # Establish connection to the database
 library(RODBC)
-cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
-#cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
+#cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
+cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
@@ -37,7 +37,6 @@ for (i in 1:length(sources)){
 
 
 #De-duplicate the imported data and setup the Skill Types, Skill Names tables
-
 # retrieve the imported records into a data frame
 df <- sqlQuery(db,"SELECT source_id, skill_type_name, skill_name, ROUND(AVG(rating),3) rating FROM tbl_import GROUP BY source_id, skill_type_name, skill_name ORDER BY source_id, skill_type_name, skill_name;", stringsAsFactors = FALSE)  
 
@@ -61,32 +60,22 @@ sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT 
 
 
 
-
-
-
-
-
 #populate skill sets and the cross references to skills (Keith)
 ##########################################################################################################
 #KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
 
 library(RMySQL)
 library(dplyr)
-
+ 
 # proj_user <- "root"
 # proj_pwd  <- "CUNYRBridge4!"
 # proj_db   <- "skill"
 # proj_host <- "localhost"
+
 proj_user <- "project3"
 proj_pwd  <- "CUNYRBridge4"
 proj_db   <- "skill"
 proj_host <- "db4free.net"
-
-
-
-
-
-
 
 
 ##################################################################
@@ -107,7 +96,6 @@ URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Sk
 skill_set <- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
 
 # sync dataframe columns to match the target table
-
 skill_set$skill_set_id <- rownames(skill_set)
 
 colnames(skill_set) <- c("skill_set_name", "skill_set_description", "skill_type", "skill_set_id")
@@ -134,20 +122,129 @@ if (rs == 0) printf("No Rows Loaded into tbl_skill_set!")
 dbDisconnect(skilldb)
 
 
-##################################################################
-# KEITH F
-# Load tbl_skill_set_xref from the CSV file on GitHub
+# -------------------------------------------------------------
+# This R code process the csv file Skill_Keyword_Map.csv into a dataframe
+# with two columns: skill_category and skill_name
+# 
+# The input file is in the format of:
 #
-##################################################################
+#     Skill Category,       Skill Keyword
+#     --------------        --------------
+#     Machine Learning,	    "decision trees, neural nets, SVM, clustering, predictive analytics, machine learning, clustering"
+#
+#
+# The output will be a dataframe:
+#  
+#  skill_category           skill_keyword
+#  --------------          ---------------
+#  Machine Learning         decision trees
+#  Machine Learning         neural nets
+#  Machine Learning         SVM
+#  Machine Learning         clustering
+#  Machine Learning         predictive analytics
+#  Machine Learning         machine learning
+#  Machine Learning         clustering
+#
+#  This script produces the file called Skill_Category_Xref.csv (loaded to GitHub)
+# -----------------------------------------------------------------------------------------
+
+library(stringr)
+library(RMySQL)
+library(dplyr)
+
+#############################################################
+# Step 1 - File Parsing
+# Parse the Skill_Keyword_Map file located on GitHub
+#############################################################
+
+# load in Skill_Keyword_Map.csv file from GitHub
+# this file matches skill keywords with a skill set category
+
+URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Keyword_Map.csv"
+
+skill_map <- read.csv(URL, header=TRUE, stringsAsFactors = FALSE)[, 1:3]
+
+#initialize an empty dataframe to rbind all the keywords in column format
+ret <- data.frame(Raw.Skill = character(), Category = character(), Skill.Type = character())
+
+for (i in 1:nrow(skill_map))  {
+  
+  keywords <- data.frame(str_split(skill_map$Skill.Keyword[i], ","))
+  
+  keywords$skill_category <- skill_map$Skill.Category[i]
+  keywords$Skill.Type     <- skill_map$Skill.Type[i]
+  
+  colnames(keywords) <- c("Raw.Skill", "Category", "Skill.Type")
+  
+  ret <- rbind(ret, keywords)
+  
+}
+
+# trim whitespace; convert factor to characater
+ret$Raw.Skill <- str_trim(ret$Raw.Skill, side = "both")
+ret$Raw.Skill <- as.character(ret$Raw.Skill)
+
+str(ret)
+
+# dedupe in case there are duplicate skills in the file
+ret <- distinct(ret)
+
+# create the output file which is the file Skill_Category_Xref.csv
+
+# write.csv(ret, "Skill_Category_Xref.csv", row.names=FALSE)
+
+################################################################################
+# Step 2 - MySQL DB: Load tbl_skill_set 
+# ------------------------------------------
+# Using the parsed Skill-Map file, load the skill sets (categories)
+# into tbl_skill_set
+###############################################################################
 
 # establish the connection to the skill DB on db4free.net
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
-# GitHub location 
-URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Category_Xref.csv"
+skill_set <- data.frame(skill_set_name = ret$Category, 
+                        skill_set_description = NA, 
+                        skill_type = ret$Skill.Type
+)
+# we only want the distinct skill_sets (categories) and skill_types
+skill_set <- distinct(skill_set)
 
-# read the skills-to-skillset file into a dataframe
-skill_category_xref <- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
+skill_set$skill_set_id <- rownames(skill_set)
+skill_set[,"skill_set_description"] <- as.character(NA)
+
+# convert everything to a character
+skill_set[] <- lapply(skill_set, as.character)
+
+
+# pull down skill types from MySQL
+skill_types <-  dbGetQuery(skilldb, "select skill_type_id, skill_type_name from tbl_skill_type")
+
+str(skill_types)
+
+skill_set_insert <-
+  skill_set %>%  
+  inner_join(skill_types, by=c("skill_type" = "skill_type_name")) %>%
+  select(skill_set_id, skill_type_id, skill_set_name, skill_set_description)
+
+
+## delete the table tbl_skills_categories
+del <- dbGetQuery(skilldb, "delete from tbl_skill_set")
+
+# write the dataframe to the mySQL table
+dbWriteTable(skilldb, value = skill_set_insert, name = "tbl_skill_set", append = TRUE, row.names = NA, header = FALSE) 
+
+rs <- dbGetQuery(skilldb, "select count(*) from tbl_skill_set")
+
+if (rs == 0) print("No Rows Loaded into tbl_skill_set!")
+
+
+################################################################################
+# Step 3 - MySQL DB: Load tbl_skill_set_xref
+# ------------------------------------------
+# Load tbl_skill_set_xref Using the parsed Skill-Map file for skills to skill set. 
+# This DB tables associates a skill to a skill set based on the Skill-Map file.
+###############################################################################
 
 # pull down the skill table for the skill_id and name
 skills <-  dbGetQuery(skilldb, "select skill_id, skill_name from tbl_skill")
@@ -157,12 +254,14 @@ skill_sets <- dbGetQuery(skilldb, "select skill_set_id, skill_set_name from tbl_
 
 # use dplr to build the dataframe to insert into tbl_skill_set_xref
 skill_set_xref_insert <- 
-  skill_category_xref %>% 
+  ret %>% 
   inner_join(skills, by=c("Raw.Skill"="skill_name")) %>%
   inner_join(skill_sets, by=c("Category"="skill_set_name"))  %>%
   select(skill_set_id, skill_id)
 
-# delete the skill set cross references
+str(skill_set_xref_insert)
+
+## delete the table tbl_skills_categories
 del <- dbGetQuery(skilldb, "delete from tbl_skill_set_xref")
 
 # write the dataframe to the mySQL table
@@ -170,18 +269,17 @@ dbWriteTable(skilldb, value = skill_set_xref_insert, name = "tbl_skill_set_xref"
 
 rs <- dbGetQuery(skilldb, "select count(*) from tbl_skill_set_xref")
 
-if (rs == 0) printf("No Rows Loaded into tbl_skill_set_xref!")
+if (rs == 0) print ("No Rows Loaded into tbl_skill_set_xref!")
 
-#close the connection
+# close the connection
 dbDisconnect(skilldb)
 
+
+
 ##########################################################################################################
-
-
-#Populate the normalized table of values
 ##ROB
+#Populate the normalized data table of all ratings values across all sources
 
-db <- odbcConnect(cnString, case="nochange")
 sqlQuery(db,"DELETE FROM tbl_data_n;") # first truncate it
 # populate the data table
 sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_set_id, skill_id, source_id, rating) ",
@@ -216,12 +314,13 @@ sqlQuery(db,sSQL)
 
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
+##### scale the ratings values across all the data sources #####
 #calculate the max and min ratings within each source and post to temporary table
 df <- dbGetQuery(skilldb, "SELECT source_id, MAX(rating) rating_max, MIN(rating) rating_min FROM tbl_data GROUP BY source_id;")
 dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
 dbWriteTable(skilldb, name="df_temp", value=df)
 
-#normalize the ratings from 0 to 100
+#scale the ratings from 0 to 100
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = NULL;")
 dbSendQuery(skilldb, "
             UPDATE tbl_data d, df_temp t 
@@ -231,6 +330,8 @@ dbSendQuery(skilldb, "
 #since this is a discrete series, set all the minimum values to one, instead of zero
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
 
+
+##### make presentable views #####
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
 dbSendQuery(skilldb,"
             CREATE VIEW `vw_Skill_Type_Frequency_Percent` AS
@@ -263,52 +364,6 @@ dbSendQuery(skilldb, "
             GROUP BY skill_set_name 
             ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
 
-dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top10_Skills_By_Source;")
-df <- dbGetQuery(skilldb, "
-      SELECT source_name, skill_name, rating_scalar, source_rank
-      FROM
-       (SELECT source_name, skill_name, rating_scalar,
-               @source_rank := IF(@source_id_current = source_id,@source_rank+1,1) AS source_rank,
-               @source_id_current := source_id
-        FROM tbl_data
-        ORDER BY source_id, rating_scalar DESC
-       ) ranked
-      WHERE source_rank <= 10;")
-dbWriteTable(skilldb, name="tbl_Top10_Skills_By_Source", value=df)
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_By_Source;")
-dbSendQuery(skilldb, "CREATE VIEW `vw_Top10_Skills_By_Source` AS SELECT * FROM tbl_Top10_Skills_By_Source;")
-
-dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top5_Skills_By_Skill_Set;")
-df <- dbGetQuery(skilldb, "
-                 SELECT skill_set_name, skill_name, rating_scalar, skill_set_rank
-                 FROM
-                 (SELECT skill_set_name, skill_name, rating_scalar,
-                 @skill_set_rank := IF(@skill_set_id_current = skill_set_id,@skill_set_rank+1,1) AS skill_set_rank,
-                 @skill_set_id_current := skill_set_id
-                 FROM tbl_data
-                 ORDER BY skill_set_id, rating_scalar DESC
-                 ) ranked
-                 WHERE skill_set_rank <= 5;")
-dbWriteTable(skilldb, name="tbl_Top5_Skills_By_Skill_Set", value=df)
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top5_Skills_By_Skill_Set;")
-dbSendQuery(skilldb, "CREATE VIEW `vw_Top5_Skills_By_Skill_Set` AS SELECT * FROM tbl_Top5_Skills_By_Skill_Set;")
-
-
-dbSendQuery(skilldb, "DROP TABLE IF EXISTS tbl_Top5_Skill_Sets_By_Skill_Type;")
-df <- dbGetQuery(skilldb, "
-                 SELECT skill_type_name, skill_set_name, rating_scalar, skill_type_rank
-                 FROM
-                 (SELECT skill_type_name, skill_set_name, rating_scalar,
-                 @skill_type_rank := IF(@skill_type_id_current = skill_type_id,@skill_type_rank+1,1) AS skill_type_rank,
-                 @skill_type_id_current := skill_type_id
-                 FROM tbl_data
-                 ORDER BY skill_type_id, rating_scalar DESC
-                 ) ranked
-                 WHERE skill_type_rank <= 5;")
-dbWriteTable(skilldb, name="tbl_Top5_Skill_Sets_By_Skill_Type", value=df)
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top5_Skill_Sets_By_Skill_Type;")
-dbSendQuery(skilldb, "CREATE VIEW `vw_Top5_Skill_Sets_By_Skill_Type` AS SELECT * FROM tbl_Top5_Skill_Sets_By_Skill_Type;")
-
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skills_Overall;")
 dbSendQuery(skilldb, "
             CREATE VIEW `vw_Bottom10_Skills_Overall` AS
@@ -324,6 +379,33 @@ dbSendQuery(skilldb, "
             FROM tbl_data 
             GROUP BY skill_set_name 
             ORDER BY SUM(rating_scalar) LIMIT 10;")
+
+
+# Create each complex view (rankings within categories)
+parent  <- c("skill_set_name","source_name", "skill_type_name")
+child   <- c("skill_name","skill_name", "skill_set_name")
+top_btm <- c("top","top", "top")
+label   <- c("skills_by_skill_set","skills_by_source", "skill_sets_by_skill_type")
+reps    <- c(3,10,5)
+
+for (i in 1:length(parent)){
+  sSQL <-  paste("SELECT ", parent[i], ", ", child[i], ", SUM(rating_scalar) rating_scalar  FROM tbl_data  GROUP BY ", parent[i], ", ", child[i], ";", sep = "")
+  df <- dbGetQuery(skilldb, sSQL)
+  dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
+  dbWriteTable(skilldb, name="df_temp", value=df)
+  sSQL <- paste("SELECT ", parent[i], ", ", child[i], 
+                ", rating_scalar, rank FROM (SELECT ", parent[i], ", ", child[i], 
+                ", rating_scalar, @rank := IF(@current = ", parent[i], ", @rank+1,1) AS rank, @current := ", parent[i], 
+                " FROM df_temp ORDER BY ", parent[i], ", rating_scalar DESC) ranked WHERE rank <= ", reps[i], ";", sep = "")
+  df <- dbGetQuery(skilldb, sSQL)
+  df <- dbGetQuery(skilldb, sSQL) # sometimes the ranks don't work the first time, just repeat and they do!!!!??!!!
+  obj <- paste(top_btm[i],reps[i],"_", label[i], sep = "") # name of table or view
+  dbSendQuery(skilldb, paste("DROP TABLE IF EXISTS tbl_", obj, ";", sep = ""))
+  dbWriteTable(skilldb, name=paste("tbl_", obj, sep = ""), value=df) #create the special table for this view  (can't create views with variables)
+  dbSendQuery(skilldb, paste("DROP VIEW IF EXISTS vw_", obj, ";", sep = "")) # drop the view
+  sSQL = paste("CREATE VIEW `vw_", obj, "` AS SELECT * FROM tbl_", obj, " ORDER BY ", parent[i], ", rank;", sep = "") # create syntax to recreate the view
+  dbSendQuery(skilldb, sSQL)
+}
 
 
 
@@ -655,10 +737,8 @@ dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
 
 
 #Show how to query the data
-
 df <- sqlQuery(db,"SELECT * FROM tbl_data;")
 head(df)
-class(df)
 
 
 
