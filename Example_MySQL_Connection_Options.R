@@ -1,3 +1,4 @@
+
 library(RMySQL)
 
 
@@ -17,6 +18,11 @@ skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, 
 # load the processed source data into a dataframe from the tbl_data
 rs <- dbGetQuery(skilldb, "select * from tbl_data")
 
+
+# load a view into a dataframe
+my_view <- dbGetQuery(skilldb, "select * from vw_top5_skill_sets_by_skill_type")
+my_view  #get a look at it
+
 #close the connection
 dbDisconnect(skilldb)
 
@@ -29,11 +35,13 @@ library(dplyr)
 conDplyr = src_mysql(dbname = proj_db, user = proj_user, password = proj_pwd, host = proj_host)
 
 skillData <- conDplyr %>%
-    tbl("tbl_data") %>%
-    collect() 
+  tbl("tbl_data") %>%
+  collect() 
 
 # load some data from the tbl_import table
 importData <- conDplyr %>%
-    tbl("tbl_import") %>%
-    collect()  %>% filter(row_number() < 100)
+  tbl("tbl_import") %>%
+  collect()  %>% filter(row_number() < 100)
+
+
 
