@@ -1,8 +1,8 @@
 Skill Type,Skill Category,Skill Keyword,X1,X2,X3
 math,Algorithms,"computational complexity, CS theory, algorithm design",Data Developers,Data Researchers,NA
 programming,Back-End Programming,"Java, Rails, Ruby, Perl",Data Creatives,Data Developers,NA
-math,Bayesian/Monte-Carlo Statistics,"MCMC, BUGS, Monte-Carlo Statistics, Bayesian Statistics",Data Developers,Data Researchers,NA
-programming,Big and Distributed Data,"Hadoop, Map/Reduce, Pig, mapping, Hive, fintech, Distributed Data, data natives, data mining, data engineering, big data, GIS",Data Business People,Data Creatives,Data Developers
+math,Bayesian/Monte-Carlo Statistics,"MCMC, Monte-Carlo Statistics, Bayesian Statistics",Data Developers,Data Researchers,NA
+programming,Big and Distributed Data,"Hadoop, Pig, Hive, fintech, Distributed Data, data natives, data mining, data engineering, big data, GIS",Data Business People,Data Creatives,Data Developers
 business,Business,"business development, budgeting, business, business intelligence,forecasting, global Optimization,real analysis,entrepreneurship, analysis",Data Business People,NA,NA
 math,Classical Statistics,"general linear model, statistics, GLM, analytics",Data Business People,Data Creatives,Data Researchers
 programming,Data Manipulation,"regexes, web scraping, RegEx",Data Creatives,Data Researchers,NA
@@ -20,9 +20,9 @@ math,Surveys and Marketing,"multinomial modeling, Surveys and Marketing, modelin
 programming,Systems Administration,"nix, DBA, cloud tech., UNIX, Systems Administration, storage, cloud tech, cloud",Data Creatives,Data Developers,NA
 math,Temporal Statistics,time-series analysis,Data Creatives,Data Researchers,NA
 programming,Unstructured Data,"NOSQL, text mining, Unstructured Data",Data Creatives,Data Developers,NA
-visualization,Visualization,"statistical graphics, web-based data-viz, visualization, media, experimental design, design,presentation",Data Creatives,Data Researchers,NA
+visualization,Visualization,"statistical graphics, web-based data-viz, visualization, media, experimental design, design,presentation, Map/Reduce, mapping",Data Creatives,Data Researchers,NA
 programming,Relational Databases,"Teradata, PostgreSQL, Oracle, MySQL",,,
-programming,Statistical Programming,"Stata, SPSS, SAS, R, agent-based, discrete Simulation, Simulation, ANOVA",,,
+programming,Statistical Programming,"Stata, SPSS, SAS, R, agent-based, discrete Simulation, Simulation, ANOVA, BUGS",,,
 programming,General Programming,"sofware engineering, programming, devops, network",,,
 programming,Information Security,"security and risk strategy, policy, information",,,
 business,Industry-Specific Knowledge,"retail, research, manufacturing, government",,,
