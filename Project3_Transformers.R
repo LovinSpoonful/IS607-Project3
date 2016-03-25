@@ -60,7 +60,7 @@ sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT 
 
 
 
-#populate skill sets and the cross references to skills (Keith)
+
 ##########################################################################################################
 #KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
 
@@ -79,7 +79,7 @@ proj_host <- "db4free.net"
 
 
 ##################################################################
-#KEITH F
+#
 # Load tbl_skill_set from the CSV file on GitHub
 #
 ##################################################################
@@ -120,6 +120,8 @@ if (rs == 0) printf("No Rows Loaded into tbl_skill_set!")
 
 #close the connection
 dbDisconnect(skilldb)
+
+
 
 
 # -------------------------------------------------------------
