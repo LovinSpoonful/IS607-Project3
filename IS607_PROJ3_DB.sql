@@ -63,7 +63,7 @@ CREATE TABLE `tbl_data_n` (
 `skill_id`            int(11) NOT NULL,
 `source_id`           int(11) NOT NULL,
 `rating`              float   NOT NULL,
-PRIMARY KEY (`skill_type_id`, `skill_id`, `source_id`));
+PRIMARY KEY (`skill_type_id`, `skill_set_id`, `skill_id`, `source_id`));
 
 -- denormalized representation of data
 -- to make view generation easier
