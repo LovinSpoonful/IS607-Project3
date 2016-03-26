@@ -11,8 +11,8 @@
 
 # Establish connection to the database
 library(RODBC)
-#cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
-cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
+cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
+#cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
@@ -108,14 +108,14 @@ library(stringr)
 library(RMySQL)
 library(dplyr)
 
-#proj_user <- "root"
-#proj_pwd  <- "CUNYRBridge4!"
-#proj_db   <- "skill"
-#proj_host <- "localhost"
-proj_user <- "project3"
-proj_pwd  <- "CUNYRBridge4"
+proj_user <- "root"
+proj_pwd  <- "CUNYRBridge4!"
 proj_db   <- "skill"
-proj_host <- "db4free.net"
+proj_host <- "localhost"
+#proj_user <- "project3"
+#proj_pwd  <- "CUNYRBridge4"
+#proj_db   <- "skill"
+#proj_host <- "db4free.net"
 
 #############################################################
 # Step 1 - File Parsing
@@ -246,7 +246,9 @@ dbDisconnect(skilldb)
 
 
 
-# SECTION 3:  data was scaled and loaded into tbl_data
+
+
+# SECTION 3:  data was loaded into tbl_data and scaled
 
 ###########################################################################
 #ROB
@@ -302,95 +304,7 @@ dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar 
 
 
 
-
-# SECTION 4:  presentation-ready views were created 
-
-# make presentable views
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
-dbSendQuery(skilldb,"
-            CREATE VIEW `vw_Skill_Type_Frequency_Percent` AS
-            SELECT skill_type_name, ROUND(sum(rating_scalar) / (SELECT SUM(rating_scalar) FROM tbl_data),2)*100 AS Frequency_Percent
-            FROM tbl_data
-            GROUP BY skill_type_name ORDER BY sum(rating_scalar) DESC;")
-
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall;")
-dbSendQuery(skilldb, "
-            CREATE VIEW `vw_Top10_Skills_Overall` AS
-            SELECT skill_name, SUM(rating_scalar) 
-            FROM tbl_data 
-            GROUP BY skill_name 
-            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
-
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall_excluding_rjMetrics;")
-dbSendQuery(skilldb, "
-            CREATE VIEW `vw_Top10_Skills_Overall_excluding_rjMetrics` AS
-            SELECT skill_name, SUM(rating_scalar) 
-            FROM tbl_data
-            WHERE source_name <> 'RJMETRICS'
-            GROUP BY skill_name 
-            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
-
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skill_Sets_Overall;")
-dbSendQuery(skilldb, "
-            CREATE VIEW `vw_Top10_Skill_Sets_Overall` AS
-            SELECT skill_set_name, SUM(rating_scalar) 
-            FROM tbl_data 
-            GROUP BY skill_set_name 
-            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
-
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skills_Overall;")
-dbSendQuery(skilldb, "
-            CREATE VIEW `vw_Bottom10_Skills_Overall` AS
-            SELECT skill_name, SUM(rating_scalar) 
-            FROM tbl_data 
-            GROUP BY skill_name 
-            ORDER BY SUM(rating_scalar) LIMIT 10;")
-
-dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skill_Sets_Overall;")
-dbSendQuery(skilldb, "
-            CREATE VIEW `vw_Bottom10_Skill_Sets_Overall` AS
-            SELECT skill_set_name, SUM(rating_scalar) 
-            FROM tbl_data 
-            GROUP BY skill_set_name 
-            ORDER BY SUM(rating_scalar) LIMIT 10;")
-
-
-# Create each complex view (rankings within categories)
-parent  <- c("skill_set_name","source_name", "skill_type_name")
-child   <- c("skill_name","skill_name", "skill_set_name")
-top_btm <- c("top","top", "top")
-label   <- c("skills_by_skill_set","skills_by_source", "skill_sets_by_skill_type")
-reps    <- c(3,10,5)
-
-for (i in 1:length(parent)){
-  sSQL <-  paste("SELECT ", parent[i], ", ", child[i], ", SUM(rating_scalar) rating_scalar  FROM tbl_data  GROUP BY ", parent[i], ", ", child[i], ";", sep = "")
-  df <- dbGetQuery(skilldb, sSQL)
-  dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
-  dbWriteTable(skilldb, name="df_temp", value=df)
-  sSQL <- paste("SELECT ", parent[i], ", ", child[i], 
-                ", rating_scalar, rank FROM (SELECT ", parent[i], ", ", child[i], 
-                ", rating_scalar, @rank := IF(@current = ", parent[i], ", @rank+1,1) AS rank, @current := ", parent[i], 
-                " FROM df_temp ORDER BY ", parent[i], ", rating_scalar DESC) ranked WHERE rank <= ", reps[i], ";", sep = "")
-  df <- dbGetQuery(skilldb, sSQL)
-  df <- dbGetQuery(skilldb, sSQL) # sometimes the ranks don't work the first time, just repeat and they do!!!!??!!!
-  obj <- paste(top_btm[i],reps[i],"_", label[i], sep = "") # name of table or view
-  dbSendQuery(skilldb, paste("DROP TABLE IF EXISTS tbl_", obj, ";", sep = ""))
-  dbWriteTable(skilldb, name=paste("tbl_", obj, sep = ""), value=df) #create a temp table for this view  (can't create views with variables)
-  dbSendQuery(skilldb, paste("DROP VIEW IF EXISTS vw_", obj, ";", sep = "")) # drop the view
-  sSQL = paste("CREATE VIEW `vw_", obj, "` AS SELECT * FROM tbl_", obj, " ORDER BY ", parent[i], ", rank;", sep = "") # create syntax to recreate the view
-  dbSendQuery(skilldb, sSQL)
-}
-
-dbDisconnect(skilldb)
-
-
-
-
-
-
-
-
-# SECTION 5: data was weight ranked   (Dan B)
+# SECTION 4: data was weight ranked 
 
 #####################################################################
 ##KEITH F
@@ -403,6 +317,7 @@ library(dplyr)
 ## ------------------------------------------
 
 # establish the connection to the skill DB
+dbDisconnect(skilldb)
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
 # load the processed source data into a dataframe from the tbl_data
@@ -661,9 +576,6 @@ ss$ranking_skill_set_name <- ss$weight_skill_set_name * ss$rating
 #dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, sp, oop, st, v, a, is, ud, sa, md, gm, fep, ts, o, s, bs, sim, rd, dm, ss)
 dfrankskillsetname <- rbind(cs, isk, c, ct, b, pd, m, bdd, bep, ml, mp, sm, gp, sp, oop, st, v, is, ud, sa, md, gm, fep, ts, o, s, bs, sim, rd, dm, ss)
 
-
-
-
 ##############################################################################
 ## KEITH F
 ## MySQL DB Section
@@ -710,6 +622,93 @@ dbSendQuery(skilldb, "
 dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
 
 ##############################################################################
+
+
+
+
+
+
+
+
+
+
+# SECTION 5:  presentation-ready views were created (using scalar values) 
+
+# make presentable views
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
+dbSendQuery(skilldb,"
+            CREATE VIEW `vw_Skill_Type_Frequency_Percent` AS
+            SELECT skill_type_name, ROUND(sum(rating_scalar) / (SELECT SUM(rating_scalar) FROM tbl_data),2)*100 AS Frequency_Percent
+            FROM tbl_data
+            GROUP BY skill_type_name ORDER BY sum(rating_scalar) DESC;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skills_Overall` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skills_Overall_excluding_rjMetrics;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skills_Overall_excluding_rjMetrics` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data
+            WHERE source_name <> 'RJMETRICS'
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Top10_Skill_Sets_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Top10_Skill_Sets_Overall` AS
+            SELECT skill_set_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_set_name 
+            ORDER BY SUM(rating_scalar) DESC LIMIT 10;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skills_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Bottom10_Skills_Overall` AS
+            SELECT skill_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_name 
+            ORDER BY SUM(rating_scalar) LIMIT 10;")
+
+dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Bottom10_Skill_Sets_Overall;")
+dbSendQuery(skilldb, "
+            CREATE VIEW `vw_Bottom10_Skill_Sets_Overall` AS
+            SELECT skill_set_name, SUM(rating_scalar) 
+            FROM tbl_data 
+            GROUP BY skill_set_name 
+            ORDER BY SUM(rating_scalar) LIMIT 10;")
+
+
+# Create each complex view (rankings within categories)
+parent  <- c("skill_set_name","source_name", "skill_type_name")
+child   <- c("skill_name","skill_name", "skill_set_name")
+top_btm <- c("top","top", "top")
+label   <- c("skills_by_skill_set","skills_by_source", "skill_sets_by_skill_type")
+reps    <- c(3,10,5)
+
+for (i in 1:length(parent)){
+  sSQL <-  paste("SELECT ", parent[i], ", ", child[i], ", SUM(rating_scalar) rating_scalar  FROM tbl_data  GROUP BY ", parent[i], ", ", child[i], ";", sep = "")
+  df <- dbGetQuery(skilldb, sSQL)
+  dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
+  dbWriteTable(skilldb, name="df_temp", value=df)
+  sSQL <- paste("SELECT ", parent[i], ", ", child[i], 
+                ", rating_scalar, rank FROM (SELECT ", parent[i], ", ", child[i], 
+                ", rating_scalar, @rank := IF(@current = ", parent[i], ", @rank+1,1) AS rank, @current := ", parent[i], 
+                " FROM df_temp ORDER BY ", parent[i], ", rating_scalar DESC) ranked WHERE rank <= ", reps[i], ";", sep = "")
+  df <- dbGetQuery(skilldb, sSQL)
+  df <- dbGetQuery(skilldb, sSQL) # sometimes the ranks don't work the first time, just repeat and they do!!!!??!!!
+  obj <- paste(top_btm[i],reps[i],"_", label[i], sep = "") # name of table or view
+  dbSendQuery(skilldb, paste("DROP TABLE IF EXISTS tbl_", obj, ";", sep = ""))
+  dbWriteTable(skilldb, name=paste("tbl_", obj, sep = ""), value=df) #create a temp table for this view  (can't create views with variables)
+  dbSendQuery(skilldb, paste("DROP VIEW IF EXISTS vw_", obj, ";", sep = "")) # drop the view
+  sSQL = paste("CREATE VIEW `vw_", obj, "` AS SELECT * FROM tbl_", obj, " ORDER BY ", parent[i], ", rank;", sep = "") # create syntax to recreate the view
+  dbSendQuery(skilldb, sSQL)
+}
 
 
 #Show how to query the data
