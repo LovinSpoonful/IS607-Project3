@@ -1,6 +1,10 @@
 
 
+# SECTION 1 - csv files were converted to normalized database
+
+
 #############################################################
+#
 # Read the csv data files and load to normalized database
 # ROB
 #############################################################
@@ -64,6 +68,13 @@ sqlSave(db, df1, tablename = "tbl_skill_type", rownames=FALSE, append=TRUE) # wr
 sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT NULL, st.skill_type_id, i.skill_name FROM tbl_import i JOIN tbl_skill_type st ON st.skill_type_name = i.skill_type_name GROUP BY st.skill_type_id, i.skill_name;")
 
 
+
+
+
+
+
+
+#SECTION 2 -  skills were mapped to a master set of skill sets
 
 ##########################################################################################################
 #KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
@@ -230,8 +241,14 @@ dbDisconnect(skilldb)
 
 
 
-##############
-# CREATE VIEWS
+
+
+
+
+
+# SECTION 3:  data was scaled and loaded into tbl_data
+
+###########################################################################
 #ROB
 
 #Populate the normalized data table of all ratings values across all sources
@@ -262,8 +279,6 @@ sqlQuery(db,sSQL)
 sSQL <- "UPDATE tbl_skill s JOIN tbl_skill_set_xref sx  ON sx.skill_id = s.skill_id  SET s.skill_set_id = sx.skill_set_id;"
 sqlQuery(db,sSQL)  
 
-
-#Create Views from scalar ratings values
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
 #calculate the max and min ratings within each source and post to temporary table
@@ -280,6 +295,15 @@ dbSendQuery(skilldb, "
 
 #since this is a discrete series, set all the minimum values to one, instead of zero
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
+
+
+
+
+
+
+
+
+# SECTION 4:  presentation-ready views were created 
 
 # make presentable views
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
@@ -359,6 +383,14 @@ for (i in 1:length(parent)){
 
 dbDisconnect(skilldb)
 
+
+
+
+
+
+
+
+# SECTION 5: data was weight ranked   (Dan B)
 
 #####################################################################
 ##KEITH F
