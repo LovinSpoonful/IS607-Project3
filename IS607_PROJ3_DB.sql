@@ -1,7 +1,5 @@
 
 -- Create a database to help evaluate relative desirability of data science skills
-DROP SCHEMA IF EXISTS skill;
-CREATE SCHEMA skill;
 
 USE skill;
 
@@ -41,6 +39,7 @@ CREATE TABLE `tbl_skill_type` (
 `skill_type_description`  char(255) NULL,
 PRIMARY KEY (`skill_type_id`));
 
+-- distinct skill sets 
 DROP TABLE IF EXISTS `tbl_skill_set`;
 CREATE TABLE `tbl_skill_set` (
 `skill_set_id`           int(11)   NOT NULL auto_increment,
@@ -49,6 +48,7 @@ CREATE TABLE `tbl_skill_set` (
 `skill_set_description`  char(255) NULL,
 PRIMARY KEY (`skill_set_id`));
 
+-- for storing relationship between skill sets and skills
 DROP TABLE IF EXISTS `tbl_skill_set_xref`;
 CREATE TABLE `tbl_skill_set_xref` (  
  `skill_set_id` int(11) NOT NULL,  
@@ -69,10 +69,10 @@ PRIMARY KEY (`skill_type_id`, `skill_set_id`, `skill_id`, `source_id`));
 -- to make view generation easier
 DROP TABLE IF EXISTS `tbl_data`;
 CREATE TABLE `tbl_data` (
-`skill_type_id`           int(11)   NULL,
+`skill_type_id`           int(11)   NOT NULL,
 `skill_set_id`            int(11)   NOT NULL,
-`skill_id`                int(11)   NULL,
-`source_id`               int(11)   NULL,
+`skill_id`                int(11)   NOT NULL,
+`source_id`               int(11)   NOT NULL,
 `skill_type_name`         char(100) NULL,
 `skill_set_name`          char(100) NOT NULL,
 `skill_name`              char(100) NULL,
@@ -81,7 +81,16 @@ CREATE TABLE `tbl_data` (
 `rating_scalar`           float     NULL,
 `weighted_rating_overall`         float     NULL,
 `weighted_rating_by_skill_type`   float     NULL,
-`weighted_rating_by_skill_set`    float     NULL)
+`weighted_rating_by_skill_set`    float     NULL,
+PRIMARY KEY (`skill_type_id`, `skill_set_id`, `skill_id`, `source_id`));
+
+
+
+
+
+
+
+
 
 
 

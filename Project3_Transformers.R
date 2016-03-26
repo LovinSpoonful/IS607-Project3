@@ -1,7 +1,7 @@
 
 
 #############################################################
-# Read the csv data files and convert to normalized database
+# Read the csv data files and load to normalized database
 # ROB
 #############################################################
 
@@ -65,70 +65,8 @@ sqlQuery(db,"INSERT INTO tbl_skill (skill_id, skill_type_id, skill_name) SELECT 
 
 
 
-
 ##########################################################################################################
 #KEITH F   SKILL SETS AND SKILL -- SET CROSS REFERENCE
-
-library(RMySQL)
-library(dplyr)
- 
-# proj_user <- "root"
-# proj_pwd  <- "CUNYRBridge4!"
-# proj_db   <- "skill"
-# proj_host <- "localhost"
- 
-proj_user <- "project3"
-proj_pwd  <- "CUNYRBridge4"
-proj_db   <- "skill"
-proj_host <- "db4free.net"
-
-
-##################################################################
-#
-# Load tbl_skill_set from the CSV file on GitHub
-#
-##################################################################
-
-# establish the connection to the skill DB on db4free.ne
-skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
-
-# GitHub location 
-#URL <- "C:/Users/keith/Documents/DataScience/CUNY/DATA607/Projects/Project3/Skill_Categories.csv"
-
-URL <- "https://raw.githubusercontent.com/LovinSpoonful/IS607-Project3/master/Skill_Categories.csv"
-
-# read the skillsets file into a dataframe
-skill_set <- read.csv(URL, header = TRUE, stringsAsFactors = FALSE)
-
-# sync dataframe columns to match the target table
-skill_set$skill_set_id <- rownames(skill_set)
-
-colnames(skill_set) <- c("skill_set_name", "skill_set_description", "skill_type", "skill_set_id")
-
-# pull down skill types from MySQL
-skill_types <-  dbGetQuery(skilldb, "select skill_type_id, skill_type_name from tbl_skill_type")
-
-skill_set_insert <-
-  skill_set %>%  
-  inner_join(skill_types, by=c("skill_type" = "skill_type_name")) %>%
-  select(skill_set_id, skill_type_id, skill_set_name, skill_set_description)
-
-## delete the table tbl_skills_categories
-del <- dbGetQuery(skilldb, "delete from tbl_skill_set")
-
-# write the dataframe to the mySQL table
-dbWriteTable(skilldb, value = skill_set_insert, name = "tbl_skill_set", append = TRUE, row.names = NA, header = FALSE) 
-
-rs <- dbGetQuery(skilldb, "select count(*) from tbl_skill_set")
-
-if (rs == 0) printf("No Rows Loaded into tbl_skill_set!")
-
-#close the connection
-dbDisconnect(skilldb)
-
-
-
-
 # -------------------------------------------------------------
 # This R code process the csv file Skill_Keyword_Map.csv into a dataframe
 # with two columns: skill_category and skill_name
@@ -158,6 +96,15 @@ dbDisconnect(skilldb)
 library(stringr)
 library(RMySQL)
 library(dplyr)
+
+#proj_user <- "root"
+#proj_pwd  <- "CUNYRBridge4!"
+#proj_db   <- "skill"
+#proj_host <- "localhost"
+proj_user <- "project3"
+proj_pwd  <- "CUNYRBridge4"
+proj_db   <- "skill"
+proj_host <- "db4free.net"
 
 #############################################################
 # Step 1 - File Parsing
@@ -410,7 +357,7 @@ for (i in 1:length(parent)){
   dbSendQuery(skilldb, sSQL)
 }
 
-
+dbDisconnect(skilldb)
 
 
 #####################################################################
@@ -418,12 +365,6 @@ for (i in 1:length(parent)){
 
 library(RMySQL)
 library(dplyr)
-
-# MySQL DB info
-# proj_user <- "project3"
-# proj_pwd  <- "CUNYRBridge4"
-# proj_db   <- "skill"
-# proj_host <- "db4free.net"
 
 ## ------------------------------------------
 ## Using RMYSQL
@@ -742,6 +683,6 @@ dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
 #Show how to query the data
 df <- sqlQuery(db,"SELECT * FROM tbl_data;")
 head(df)
-
+dbDisconnect(skilldb)
 
 
