@@ -1,5 +1,10 @@
 
-## ROB
+
+#############################################################
+# Read the csv data files and convert to normalized database
+# ROB
+#############################################################
+
 # Establish connection to the database
 library(RODBC)
 #cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
@@ -71,7 +76,7 @@ library(dplyr)
 # proj_pwd  <- "CUNYRBridge4!"
 # proj_db   <- "skill"
 # proj_host <- "localhost"
-
+ 
 proj_user <- "project3"
 proj_pwd  <- "CUNYRBridge4"
 proj_db   <- "skill"
@@ -278,10 +283,11 @@ dbDisconnect(skilldb)
 
 
 
-##########################################################################################################
-##ROB
-#Populate the normalized data table of all ratings values across all sources
+##############
+# CREATE VIEWS
+#ROB
 
+#Populate the normalized data table of all ratings values across all sources
 sqlQuery(db,"DELETE FROM tbl_data_n;") # first truncate it
 # populate the data table
 sSQL <- paste("INSERT INTO tbl_data_n (skill_type_id, skill_set_id, skill_id, source_id, rating) ",
@@ -310,13 +316,9 @@ sSQL <- "UPDATE tbl_skill s JOIN tbl_skill_set_xref sx  ON sx.skill_id = s.skill
 sqlQuery(db,sSQL)  
 
 
-
-#NEW 3/23 ROB
-######################################################
-
+#Create Views from scalar ratings values
 skilldb = dbConnect(MySQL(), user=proj_user, password=proj_pwd, dbname=proj_db, host=proj_host)
 
-##### scale the ratings values across all the data sources #####
 #calculate the max and min ratings within each source and post to temporary table
 df <- dbGetQuery(skilldb, "SELECT source_id, MAX(rating) rating_max, MIN(rating) rating_min FROM tbl_data GROUP BY source_id;")
 dbSendQuery(skilldb, "DROP TABLE IF EXISTS df_temp;")
@@ -327,13 +329,12 @@ dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = NULL;")
 dbSendQuery(skilldb, "
             UPDATE tbl_data d, df_temp t 
             SET d.rating_scalar = ROUND((d.rating - t.rating_min) / (t.rating_max - t.rating_min),2)*100 
-            WHERE d.source_id = t.source_id;") # AND t.source_ID <> 2
+            WHERE d.source_id = t.source_id;")
 
 #since this is a discrete series, set all the minimum values to one, instead of zero
 dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar < 1;")
 
-
-##### make presentable views #####
+# make presentable views
 dbSendQuery(skilldb, "DROP VIEW IF EXISTS vw_Skill_Type_Frequency_Percent;")
 dbSendQuery(skilldb,"
             CREATE VIEW `vw_Skill_Type_Frequency_Percent` AS
@@ -403,7 +404,7 @@ for (i in 1:length(parent)){
   df <- dbGetQuery(skilldb, sSQL) # sometimes the ranks don't work the first time, just repeat and they do!!!!??!!!
   obj <- paste(top_btm[i],reps[i],"_", label[i], sep = "") # name of table or view
   dbSendQuery(skilldb, paste("DROP TABLE IF EXISTS tbl_", obj, ";", sep = ""))
-  dbWriteTable(skilldb, name=paste("tbl_", obj, sep = ""), value=df) #create the special table for this view  (can't create views with variables)
+  dbWriteTable(skilldb, name=paste("tbl_", obj, sep = ""), value=df) #create a temp table for this view  (can't create views with variables)
   dbSendQuery(skilldb, paste("DROP VIEW IF EXISTS vw_", obj, ";", sep = "")) # drop the view
   sSQL = paste("CREATE VIEW `vw_", obj, "` AS SELECT * FROM tbl_", obj, " ORDER BY ", parent[i], ", rank;", sep = "") # create syntax to recreate the view
   dbSendQuery(skilldb, sSQL)
@@ -419,10 +420,10 @@ library(RMySQL)
 library(dplyr)
 
 # MySQL DB info
-proj_user <- "project3"
-proj_pwd  <- "CUNYRBridge4"
-proj_db   <- "skill"
-proj_host <- "db4free.net"
+# proj_user <- "project3"
+# proj_pwd  <- "CUNYRBridge4"
+# proj_db   <- "skill"
+# proj_host <- "db4free.net"
 
 ## ------------------------------------------
 ## Using RMYSQL
