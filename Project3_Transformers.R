@@ -310,6 +310,7 @@ dbSendQuery(skilldb, "UPDATE tbl_data SET rating_scalar = 1 WHERE rating_scalar 
 
 
 # SECTION 4: data was weight ranked 
+# DANIEL BROOKS
 
 library(RMySQL)
 library(dplyr)
