@@ -11,8 +11,8 @@
 
 # Establish connection to the database
 library(RODBC)
-cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;"
-#cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;"
+#cnString <- "MySQL_ANSI;SERVER=localhost;DATABASE=skill;UID=root;PASSWORD=CUNYRBridge4!;OPTION=3;" # test
+cnString <- "MySQL_ANSI;SERVER=db4free.net;DATABASE=skill;UID=project3;PASSWORD=CUNYRBridge4;OPTION=3;" # live
 db <- odbcConnect(cnString, case="nochange")
 
 #manually input the list of csv files on github
@@ -108,14 +108,17 @@ library(stringr)
 library(RMySQL)
 library(dplyr)
 
-proj_user <- "root"
-proj_pwd  <- "CUNYRBridge4!"
-proj_db   <- "skill"
-proj_host <- "localhost"
-# proj_user <- "project3"
-# proj_pwd  <- "CUNYRBridge4"
+#test
+# proj_user <- "root"
+# proj_pwd  <- "CUNYRBridge4!"
 # proj_db   <- "skill"
-# proj_host <- "db4free.net"
+# proj_host <- "localhost"
+
+# live
+proj_user <- "project3"
+proj_pwd  <- "CUNYRBridge4"
+proj_db   <- "skill"
+proj_host <- "db4free.net"
 
 #############################################################
 # Step 1 - File Parsing
